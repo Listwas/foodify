@@ -1,5 +1,12 @@
 # Wdrożenie
 
+Dwie różne rzeczy, nie mylić:
+
+| Chcesz | Droga | Efekt |
+|---|---|---|
+| Żeby **ona miała własną kopię** na swoim Windowsie | [`deploy/windows/`](deploy/windows/CZYTAJ-TO.md) | działa zawsze, ale **osobna baza** — osobny plan i profil smaku |
+| Żeby **wchodziła na Twoją** i mieliście wspólny plan | Tailscale, punkt 2 poniżej | wspólne dane, ale tylko gdy Twój komputer jest włączony |
+
 Cel: Foodify chodzi sam z siebie na PC (start przy bootowaniu, restart po
 crashu), a telefon dostaje się do niego z dowolnej sieci — bez płatnego
 hostingu i bez wystawiania domowej sieci na świat.
