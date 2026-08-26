@@ -27,7 +27,8 @@ suggestions everywhere in the app.
 | Frontend | React 19 + TypeScript + Vite, CSS Modules |
 | Data layer (client) | `@tanstack/react-query` |
 | Routing | `react-router-dom` v7 |
-| Recipe seed data | TheMealDB (free test key `1`) |
+| Recipe seed data | TheMealDB (free test key `1`) — 10 dinner categories, ~510 recipes |
+| Installability | PWA via `vite-plugin-pwa` (manifest + service worker) |
 | AI | **Google Gemini free tier** via `google-genai` |
 | Stock photos | **Openverse** (no API key) |
 | Hosting | Local network only; one uvicorn process serves API + built SPA |
@@ -343,10 +344,15 @@ score   = 1.00·S_ing
   proteins and, within each, greedily picks the recipe most unlike what's already
   chosen. Rotating proteins is load-bearing: pure ingredient-distance selection
   returned eight beef dishes that merely differed from one another.
-- **Warm**: ~70% exploit (weighted sample from the top band, **capped at ~60% per
-  protein** so a systematically higher-scoring protein can't take the whole deck)
-  + ~30% explore (lowest `coverage`), interleaved, then `_spread_proteins()`
-  prevents three of the same protein in a row.
+- **Warm**: ~70% exploit + ~30% explore (lowest `coverage`), interleaved, then
+  `_spread_proteins()` prevents three of the same protein in a row.
+- **Protein cap**, applied across *both* bands:
+  `cap = max(2, ceil(limit / min(n_proteins, 4)))` — with 10 categories and a
+  12-card deck that's 3 per protein. The **exploit band is assembled per protein**
+  (top `cap × 2` from each) rather than as a flat top-N. This matters: on the real
+  511-recipe library the flat top-32 was *31 pork and 1 lamb*, so the cap had
+  nothing else to draw on and the sampler abandoned it, producing 7/12 pork decks.
+  Building the band per protein makes the cap satisfiable by construction.
 
 ---
 
@@ -465,13 +471,34 @@ Photo search and AI are stubbed via `monkeypatch` — the suite makes no network
 
 ---
 
-## 10. Current state
+## 10. Deployment
 
-- **179 recipes** (176 seeded from TheMealDB, 3 AI-generated), 2,202 ingredients.
-- **All recipes have macro estimates** — none missing.
-- Live DB also holds real usage: 22 swipe verdicts, 3 meal-plan entries.
-- Nothing has been committed to git yet — the repo is initialised with a
-  `.gitignore` but has no commits.
+- **PWA** — `vite-plugin-pwa` in `frontend/vite.config.ts` generates
+  `manifest.webmanifest` + `sw.js` into `dist/`. Icons live in `frontend/public/`
+  and are rendered from `icon.svg`. The service worker precaches the build and
+  `CacheFirst`-caches recipe photos (TheMealDB, Flickr/Openverse);
+  **`navigateFallbackDenylist: [/^\/api/]`** stops API calls being answered with
+  the cached app shell. App data is never cached — a stale meal plan is worse
+  than a slow one.
+- **systemd** — unit file at `deploy/foodify.service` (user `ben`, runs
+  `uvicorn main:server` on `0.0.0.0:8000`, `Restart=always`). Not installed
+  automatically; see `DEPLOY.md`.
+- **Remote access** — Tailscale, so her phone reaches the PC from any network
+  without port forwarding. Only works while the PC is awake; always-on would
+  need real cloud hosting.
+- **Safe areas** — `viewport-fit=cover` plus `env(safe-area-inset-*)` on the nav,
+  footer and toasts, because a standalone PWA renders under the notch.
+
+## 11. Current state
+
+- **511 recipes** (508 seeded across 10 TheMealDB categories, 3 AI-generated).
+  Breakdown: vegetarian 100, beef 95, fish 85, chicken 82, pork 62, lamb 33,
+  other 33, pasta 12, vegan 7, goat 2.
+- Macro backfill runs incrementally against the Gemini daily cap; `seed.py` is
+  idempotent, so re-running it on later days finishes whatever is still missing.
+  Recipes without macros still work — they just show no macro line and drop out
+  of the nutrition filters.
+- Live DB also holds real usage: swipe verdicts and meal-plan entries.
 
 ### Known limitations / obvious next steps
 - Single user; no auth (schema is ready, UI is not).

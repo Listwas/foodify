@@ -15,7 +15,22 @@ import ai
 from database import SessionLocal, Recipe, Ingredient
 
 API = "https://www.themealdb.com/api/json/v1/1"  # "1" is the free test key
-CATEGORIES = {"Chicken": "chicken", "Beef": "beef"}
+
+# TheMealDB category -> the protein_type we store. Only dinner-appropriate
+# categories: Dessert, Breakfast, Side and Starter are deliberately left out.
+# Counts measured 2026-08-25; the site holds ~793 meals in total.
+CATEGORIES = {
+    "Chicken": "chicken",        # 81
+    "Beef": "beef",              # 95
+    "Pork": "pork",              # 61
+    "Lamb": "lamb",              # 33
+    "Goat": "goat",              # 2
+    "Seafood": "fish",           # 84
+    "Pasta": "pasta",            # 12
+    "Vegetarian": "vegetarian",  # 100
+    "Vegan": "vegan",            # 7
+    "Miscellaneous": "other",    # 33
+}
 
 
 def _get(path: str, **params) -> list[dict]:

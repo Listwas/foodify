@@ -11,7 +11,7 @@ built to answer "what's for dinner" without cooking the same three chicken dishe
 - **swipe history**: everything you've ever swiped, with the date and your verdict, all changeable. Nothing is a one-way door — recipes you passed on quietly return to the deck after a few months
 - **suggest/swap**: ranked by what it's learned about you, filtered by protein or max cooking time, with liked recipes offered first
 - **generate something new**: describe protein/time/mood, the AI proposes a recipe, keep it or toss it
-- **recipe library**: ~175 chicken & beef recipes seeded from TheMealDB, filterable by protein, nutrition (under 500 kcal, 35g+ protein, low carb, low sugar) and status (liked, AI-made, custom, hidden). *Plan this* puts any recipe straight onto a day. Hide anything you never want to see, with 5 seconds to undo
+- **recipe library**: ~510 recipes seeded from TheMealDB across ten dinner categories (chicken, beef, pork, lamb, goat, seafood, pasta, vegetarian, vegan, misc), filterable by protein, nutrition (under 500 kcal, 35g+ protein, low carb, low sugar) and status (liked, AI-made, custom, hidden). *Plan this* puts any recipe straight onto a day. Hide anything you never want to see, with 5 seconds to undo
 - **photos**: generated recipes borrow an openly-licensed photo of a similar dish — clearly badged as stock, credited, and rerollable. You can upload your own photo for any recipe, seeded ones included
 - **taste profile**: tell it ingredients you like or avoid (allergies can be hard-filtered), and see what it has worked out on its own
 - **macros**: AI-estimated calories/protein/carbs/sugar per recipe (needs the free key below)
@@ -83,6 +83,15 @@ One process serves the app and the API. On the same wifi, open `http://<this mac
 cd backend && .venv/bin/uvicorn main:app --port 8000    # api with hot /docs
 cd frontend && npm run dev                              # vite on :5173, /api proxied
 ```
+
+## install it on a phone
+
+The frontend is a PWA — open it on a phone and use *Add to Home Screen*
+(iOS Safari) or *Install app* (Android Chrome). You get a home-screen icon, a
+fullscreen window and cached photos, no app store involved.
+
+To run it as an always-on service and reach it from outside the house, see
+**[DEPLOY.md](DEPLOY.md)** — a systemd unit plus Tailscale, both free.
 
 ## tests
 

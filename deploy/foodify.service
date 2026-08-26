@@ -1,0 +1,21 @@
+[Unit]
+Description=Foodify meal planner
+# network-online (not just network) so the LAN/Tailscale address is bindable
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=ben
+Group=ben
+WorkingDirectory=/home/ben/code/foodify/backend
+ExecStart=/home/ben/code/foodify/backend/.venv/bin/uvicorn main:server --host 0.0.0.0 --port 8000
+# a home service should come back from anything, not just clean failures
+Restart=always
+RestartSec=3
+# journalctl -u foodify -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -458,25 +458,49 @@ def deck(db: Session, limit: int = 20, user_id: int = DEFAULT_USER_ID,
         n_exploit = max(1, round(limit * 0.7))
         n_explore = max(0, limit - n_exploit)
 
+        # One protein can score higher across the board (right after a
+        # chicken-heavy week, or simply because the library holds more of it),
+        # so cap how much of the deck any single one may take. The cap covers
+        # *both* bands — capping only the exploit half still let a big category
+        # flood the deck through exploration.
+        available = {_protein(index, rid) for _, rid in scored}
+        cap = max(2, math.ceil(limit / min(max(len(available), 1), 4)))
+        used: dict[str, int] = defaultdict(int)
+
         # exploit: sample from the top band so it isn't identical every visit.
-        # One protein may score higher across the board (e.g. right after a
-        # chicken-heavy week) — cap it so the deck still offers a real choice.
-        band = scored[: max(n_exploit * 4, 20)]
+        # The band is built per protein rather than as a flat top-N — a flat
+        # window can be monolithic (the real library's top 32 was 31 pork), and
+        # then the cap has nothing else to fall back on and gets abandoned.
+        per_protein: dict[str, list] = defaultdict(list)
+        for pair in scored:
+            bucket = per_protein[_protein(index, pair[1])]
+            if len(bucket) < cap * 2:  # headroom so the sampler still has choices
+                bucket.append(pair)
+        band = sorted(
+            (pair for bucket in per_protein.values() for pair in bucket),
+            key=lambda x: -x[0],
+        )
         lo = min(s for s, _ in band) if band else 0.0
         weights = [(s - lo) + 0.05 for s, _ in band]
-        proteins = {_protein(index, rid) for _, rid in band}
-        share = max(2, math.ceil(n_exploit * 0.6)) if len(proteins) > 1 else n_exploit
         exploit = _weighted_sample(
             [r for _, r in band], weights, n_exploit, rng,
-            cap={p: share for p in proteins}, key=lambda rid: _protein(index, rid),
+            cap={p: cap for p in available}, key=lambda rid: _protein(index, rid),
         )
+        for rid in exploit:
+            used[_protein(index, rid)] += 1
 
-        # explore: whatever we know least about
+        # explore: whatever we know least about, within whatever cap is left
         rest = [rid for _, rid in scored if rid not in exploit]
         rest.sort(key=lambda rid: taste.coverage(rid))
-        explore = rest[: n_explore * 3]
-        rng.shuffle(explore)
-        explore = explore[:n_explore]
+        explore = []
+        for rid in rest:
+            if len(explore) >= n_explore:
+                break
+            protein = _protein(index, rid)
+            if used[protein] >= cap:
+                continue
+            explore.append(rid)
+            used[protein] += 1
 
         chosen = []
         for i in range(max(len(exploit), len(explore))):

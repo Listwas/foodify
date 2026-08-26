@@ -4,6 +4,7 @@ These assert the properties the recommender is supposed to have, not exact
 scores — the weights are tunable and shouldn't break the suite when adjusted.
 """
 import random
+from collections import Counter
 from datetime import date, timedelta
 
 import recommend
@@ -202,3 +203,23 @@ def test_cooking_a_meal_counts_more_than_merely_planning_it(client):
     db = SessionLocal()
     scores = {e["recipe"].id: e["score"] for e in recommend.rank(db)}
     assert scores[twin_cooked["id"]] > scores[twin_planned["id"]]
+
+
+def test_no_single_protein_dominates_a_varied_library(client):
+    """With many categories available, one big or well-scoring category must
+    not swallow the deck — that was happening once the library grew past two
+    proteins."""
+    proteins = ["chicken", "beef", "pork", "lamb", "fish", "vegetarian"]
+    for p in proteins:
+        # pork deliberately over-represented, as it is in the real library
+        count = 20 if p == "pork" else 5
+        for i in range(count):
+            make_named(client, f"{p} dish {i}", PANTRY + [f"{p} spice {i}"], p)
+
+    db = SessionLocal()
+    cards = recommend.deck(db, limit=12, rng=random.Random(11))
+    counts = Counter(c["recipe"].protein_type for c in cards)
+
+    assert len(cards) == 12
+    assert max(counts.values()) <= 4, f"one protein took over the deck: {dict(counts)}"
+    assert len(counts) >= 4, f"deck should span several proteins: {dict(counts)}"

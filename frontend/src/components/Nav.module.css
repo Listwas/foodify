@@ -4,6 +4,8 @@
     z-index: 50;
     background: var(--bg-5);
     border-bottom: 1px solid var(--bg-10);
+    /* installed as a PWA the page runs under the status bar / notch */
+    padding-top: env(safe-area-inset-top, 0px);
 }
 
 .nav_container {

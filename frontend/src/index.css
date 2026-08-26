@@ -162,7 +162,7 @@ input.field, select.field, textarea.field {
 .app-footer {
     margin-top: auto;
     text-align: center;
-    padding: 18px 12px 22px;
+    padding: 18px 12px calc(22px + env(safe-area-inset-bottom, 0px));
     color: var(--text-dim);
     font-size: 0.78rem;
 }
@@ -170,7 +170,7 @@ input.field, select.field, textarea.field {
 
 .toast_container {
     position: fixed;
-    bottom: 36px;
+    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     display: flex;
