@@ -1,0 +1,67 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+.form button { margin-top: 6px; align-self: flex-start; }
+
+.photo {
+    width: 100%;
+    max-width: 240px;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    border-radius: 10px;
+    align-self: center;
+    margin-bottom: 4px;
+}
+
+.result { display: flex; flex-direction: column; }
+.result h3 { margin: 10px 0 4px; font-size: 1.2rem; }
+.result h4 {
+    margin: 16px 0 6px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+}
+
+.meta {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-transform: capitalize;
+    margin-bottom: 4px;
+}
+
+.ingredients {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.instructions {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text);
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}

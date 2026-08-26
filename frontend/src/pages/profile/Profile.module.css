@@ -1,0 +1,181 @@
+.title {
+    margin: 0 0 4px;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+.blurb {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    margin: 0 0 20px;
+    max-width: 56ch;
+}
+
+.columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.panel {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 12px;
+    padding: 14px 16px 16px;
+}
+
+.panel h2,
+.learned h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin: 0 0 12px;
+}
+
+.addRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.addRow input.field { flex: 1; min-width: 0; }
+
+.hardToggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.74rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.hardToggle input { accent-color: var(--danger); }
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-10);
+    border: 1px solid var(--bg-20);
+    border-radius: 999px;
+    padding: 4px 6px 4px 12px;
+    font-size: 0.8rem;
+}
+.tag button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    border-radius: 50%;
+    line-height: 1;
+}
+.tag button:hover { color: var(--danger); background: var(--bg-20); }
+.tag em {
+    font-style: normal;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--danger);
+    color: white;
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.tagLike {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.tagAvoid {
+    background: hsla(0, 70%, 58%, 0.12);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.none {
+    color: var(--text-dim);
+    font-size: 0.84rem;
+}
+
+.learned {
+    margin-top: 22px;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 12px;
+    padding: 14px 16px 18px;
+}
+
+/* even columns so the numbers line up instead of drifting with label width */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--bg-10);
+}
+.stats span {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.stats b {
+    color: var(--text);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* label in its own column so wrapped tags stay aligned under each other */
+.learnedRow {
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    align-items: start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.learnedRow .tags,
+.learnedRow > span:not(.learnedLabel) {
+    align-self: start;
+}
+
+.learnedTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.learnedLabel {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    text-align: right;
+    padding-top: 5px;
+}
+
+@media (max-width: 560px) {
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
+    .learnedRow { grid-template-columns: 1fr; gap: 5px; }
+    .learnedLabel { text-align: left; padding-top: 0; }
+}
+
+@media (max-width: 700px) {
+    .columns { grid-template-columns: 1fr; }
+}

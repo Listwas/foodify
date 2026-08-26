@@ -1,0 +1,127 @@
+.header {
+    margin-bottom: 6px;
+}
+.header h1 {
+    margin: 4px 0 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+.back {
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+.back:hover { color: var(--accent); }
+
+.blurb {
+    color: var(--text-dim);
+    font-size: 0.86rem;
+    margin: 6px 0 16px;
+    max-width: 62ch;
+}
+
+.chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.chip {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-20);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+.chip:hover { color: var(--text); }
+.chipActive {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.empty { color: var(--text-dim); }
+.empty a { color: var(--accent); }
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 11px;
+    padding: 9px 12px;
+}
+.row:hover { border-color: var(--bg-20); }
+
+.rowMain {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+}
+.rowMain:hover .title { color: var(--accent); }
+
+.thumb {
+    width: 52px;
+    height: 52px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+.thumbPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    background: var(--bg-10);
+}
+
+.text { min-width: 0; }
+.title {
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.3;
+    transition: color 0.12s ease;
+}
+.meta {
+    font-size: 0.77rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.dot { opacity: 0.5; }
+
+.like { color: hsl(145, 60%, 50%); font-weight: 600; }
+.dislike { color: var(--text-dim); font-weight: 600; }
+.hidden { color: var(--danger); font-weight: 600; }
+
+.actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.actions .btn { padding: 5px 10px; font-size: 0.82rem; }
+
+@media (max-width: 560px) {
+    .row { flex-wrap: wrap; }
+    .rowMain { flex-basis: 100%; }
+    .actions { flex-basis: 100%; }
+    .actions .btn { flex: 1; }
+}

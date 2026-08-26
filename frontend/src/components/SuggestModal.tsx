@@ -1,0 +1,188 @@
+import { useMemo, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { apiAssign, apiProteinTypes, apiRecommendations, apiShortlist } from "../lib/api"
+import type { DeckCard } from "../lib/types"
+import { imageBox, macroLine, mealImage } from "../lib/format"
+import { useToast } from "../context/ToastContext"
+import Modal from "./Modal"
+import s from "./SuggestModal.module.css"
+
+interface Props {
+    date: string
+    currentRecipeId?: number
+    onGenerate: () => void
+    onClose: () => void
+}
+
+const TIME_OPTIONS = [20, 30, 45, 60, 90]
+/** how far down the ranking "surprise me" is willing to reach */
+const TOP_BAND = 25
+
+function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
+    const { showToast } = useToast()
+    const queryClient = useQueryClient()
+
+    const [protein, setProtein] = useState("")
+    const [maxTime, setMaxTime] = useState("")
+    const [candidate, setCandidate] = useState<DeckCard | null>(null)
+    const [seen, setSeen] = useState<Set<number>>(new Set())
+
+    // ranked by the taste engine rather than plain random
+    const { data: ranked } = useQuery({
+        queryKey: ["recommendations"],
+        queryFn: () => apiRecommendations(200),
+    })
+    const { data: shortlist } = useQuery({ queryKey: ["shortlist"], queryFn: apiShortlist })
+    const { data: proteins } = useQuery({ queryKey: ["protein-types"], queryFn: apiProteinTypes })
+
+    const pool = useMemo(() => {
+        let list = ranked ?? []
+        if (protein) list = list.filter(r => r.protein_type === protein)
+        if (maxTime) {
+            list = list.filter(
+                r => r.prep_time_minutes != null && r.prep_time_minutes <= Number(maxTime)
+            )
+        }
+        return list.filter(r => r.id !== currentRecipeId)
+    }, [ranked, protein, maxTime, currentRecipeId])
+
+    const pick = () => {
+        if (pool.length === 0) {
+            showToast("No recipes match those filters", "error")
+            return
+        }
+        let fresh = pool.filter(r => !seen.has(r.id) && r.id !== candidate?.id)
+        let nextSeen = seen
+        if (fresh.length === 0) {
+            nextSeen = new Set()
+            fresh = pool.filter(r => r.id !== candidate?.id)
+            if (fresh.length === 0) fresh = pool
+        }
+        // favour the top of the ranking, but keep it surprising
+        const band = fresh.slice(0, TOP_BAND)
+        const next = band[Math.floor(Math.random() * band.length)]
+        setCandidate(next)
+        setSeen(new Set(nextSeen).add(next.id))
+    }
+
+    const resetFilters = (fn: () => void) => {
+        fn()
+        setCandidate(null)
+        setSeen(new Set())
+    }
+
+    const assign = useMutation({
+        mutationFn: (recipeId: number) => apiAssign({ date, recipe_id: recipeId }),
+        onSuccess: entry => {
+            queryClient.invalidateQueries({ queryKey: ["week"] })
+            queryClient.invalidateQueries({ queryKey: ["grocery"] })
+            queryClient.invalidateQueries({ queryKey: ["shortlist"] })
+            queryClient.invalidateQueries({ queryKey: ["recommendations"] })
+            showToast(`Planned: ${entry.recipe.title}`)
+            onClose()
+        },
+        onError: (e: Error) => showToast(e.message, "error"),
+    })
+
+    const img = candidate ? mealImage(candidate.image_url, "hero") : null
+
+    return (
+        <Modal title="What's for dinner?" onClose={onClose}>
+            <div className={s.filters}>
+                <select
+                    className="field"
+                    value={protein}
+                    onChange={e => resetFilters(() => setProtein(e.target.value))}
+                    aria-label="protein filter"
+                >
+                    <option value="">Any protein</option>
+                    {(proteins ?? []).map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <select
+                    className="field"
+                    value={maxTime}
+                    onChange={e => resetFilters(() => setMaxTime(e.target.value))}
+                    aria-label="time filter"
+                >
+                    <option value="">Any time</option>
+                    {TIME_OPTIONS.map(t => <option key={t} value={t}>≤ {t} min</option>)}
+                </select>
+            </div>
+
+            {candidate ? (
+                <div className={s.candidate}>
+                    {img && (
+                        <img
+                            className={`${s.img} meal-img`}
+                            src={img}
+                            width={imageBox("hero")}
+                            height={imageBox("hero")}
+                            alt=""
+                        />
+                    )}
+                    <div className={s.info}>
+                        <h3>{candidate.title}</h3>
+                        <div className={s.meta}>
+                            {candidate.protein_type}
+                            {candidate.prep_time_minutes != null && <> · {candidate.prep_time_minutes} min</>}
+                        </div>
+                        {macroLine(candidate) && <div className="macros">{macroLine(candidate)}</div>}
+                        {candidate.reasons.length > 0 && (
+                            <div className={s.reasons}>
+                                {candidate.reasons.map(r => (
+                                    <span key={r} className={s.reason}>{r}</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className={s.actions}>
+                        <button
+                            className="btn primary"
+                            onClick={() => assign.mutate(candidate.id)}
+                            disabled={assign.isPending}
+                        >
+                            {assign.isPending ? "Planning…" : "Sounds good"}
+                        </button>
+                        <button className="btn" onClick={pick}>Skip →</button>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {shortlist && shortlist.length > 0 && (
+                        <div className={s.shortlist}>
+                            <div className={s.shortlistHead}>♥ From your swipes</div>
+                            <div className={s.shortlistRow}>
+                                {shortlist.slice(0, 6).map(r => (
+                                    <button
+                                        key={r.id}
+                                        className={s.shortcut}
+                                        onClick={() => assign.mutate(r.id)}
+                                        disabled={assign.isPending}
+                                        title={r.title}
+                                    >
+                                        {mealImage(r.image_url, "thumb") && (
+                                            <img src={mealImage(r.image_url, "thumb")!} alt="" />
+                                        )}
+                                        <span>{r.title}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div className={s.start}>
+                        <button className="btn primary" onClick={pick}>🎲 Surprise me</button>
+                        <div className={s.poolNote}>
+                            {pool.length} recipe{pool.length === 1 ? "" : "s"} ranked for your taste
+                        </div>
+                    </div>
+                </>
+            )}
+
+            <button className={`btn ghost ${s.generateLink}`} onClick={onGenerate}>
+                ✨ Generate something new instead →
+            </button>
+        </Modal>
+    )
+}
+
+export default SuggestModal

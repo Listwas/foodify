@@ -1,0 +1,302 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.modes {
+    display: flex;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-20);
+    border-radius: 999px;
+    padding: 2px;
+}
+.modeBtn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 0.84rem;
+    cursor: pointer;
+}
+.modeActive {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+}
+
+.weekNav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.rangeBtn { min-width: 120px; }
+
+/* ---- agenda (week) ----
+   Seven narrow columns left no room for anything; a row per day gives each
+   meal a real photo, its macros, and buttons that say what they do. */
+
+.agenda {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-height: 92px;
+    transition: border-color 0.12s ease;
+}
+.rowToday {
+    border-color: var(--accent);
+    background: linear-gradient(90deg, var(--accent-soft), var(--bg-5) 40%);
+}
+.rowPast { opacity: 0.62; }
+.rowPast:hover { opacity: 1; }
+.rowCooked { border-left: 3px solid hsl(145, 60%, 45%); }
+
+.gutter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    flex-shrink: 0;
+    gap: 1px;
+}
+.weekday {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-dim);
+}
+.dayNum {
+    font-weight: 700;
+    font-size: 1.25rem;
+    line-height: 1.1;
+}
+.rowToday .dayNum { color: var(--accent); }
+.todayTag {
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.rowMain {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.rowMain:hover .rowTitle { color: var(--accent); }
+
+.thumb {
+    width: 64px;
+    height: 64px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 9px;
+    flex-shrink: 0;
+}
+.thumbPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--bg-10);
+}
+
+.rowText { min-width: 0; flex: 1; }
+.rowTitle {
+    font-weight: 600;
+    font-size: 0.94rem;
+    line-height: 1.28;
+    transition: color 0.12s ease;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.cookedTick { color: hsl(145, 60%, 45%); margin-right: 3px; }
+.rowMeta {
+    color: var(--text-dim);
+    font-size: 0.77rem;
+    text-transform: capitalize;
+    margin: 2px 0 1px;
+}
+
+.rowActions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.rowActions .btn {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+.cookBtn { min-width: 104px; }
+
+.rowEmpty {
+    flex: 1;
+    align-self: stretch;
+    border: 1.5px dashed var(--bg-20);
+    border-radius: 9px;
+    background: none;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: color 0.12s ease, border-color 0.12s ease;
+}
+.rowEmpty:hover { color: var(--accent); border-color: var(--accent); }
+
+@media (max-width: 900px) {
+    .agenda { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+    .row { flex-wrap: wrap; padding: 10px; gap: 10px; }
+    .gutter {
+        flex-direction: row;
+        width: auto;
+        gap: 7px;
+        align-items: baseline;
+    }
+    .dayNum { font-size: 1rem; }
+    .todayTag { margin-left: 2px; }
+    .rowMain { flex-basis: 100%; order: 2; }
+    .rowActions {
+        order: 3;
+        flex-direction: row;
+        flex-basis: 100%;
+    }
+    .rowActions .btn { flex: 1; }
+    .cookBtn { min-width: 0; }
+    .rowEmpty { flex-basis: 100%; padding: 14px 0; }
+}
+
+/* ---- month view ---- */
+
+.monthHead {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.monthHead div {
+    text-align: center;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+}
+
+.monthGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.cell {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 10px;
+    min-height: 92px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    overflow: hidden;
+}
+.cell:hover { border-color: var(--accent); }
+.cellToday { border-color: var(--accent); }
+.cellOutside { opacity: 0.4; }
+.cellFilled { background: var(--bg-10); }
+
+.cellNum {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+.cellToday .cellNum { color: var(--accent); }
+
+.chip {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-height: 0;
+}
+.chipImg {
+    width: 100%;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+.chipText {
+    font-size: 0.68rem;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cellAdd {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bg-30);
+    font-size: 1.1rem;
+}
+.cell:hover .cellAdd { color: var(--accent); }
+
+@media (max-width: 620px) {
+    .monthGrid { gap: 3px; }
+    .monthHead { gap: 3px; }
+    .cell { min-height: 58px; padding: 3px; border-radius: 7px; }
+    .chipImg { display: none; }
+    .chipText { font-size: 0.6rem; -webkit-line-clamp: 3; line-clamp: 3; }
+    .cellNum { font-size: 0.65rem; }
+}

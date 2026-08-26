@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+SQLAlchemy
+requests
+google-genai
+python-dotenv
+pytest
+httpx

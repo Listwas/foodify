@@ -1,0 +1,143 @@
+.top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.back {
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+.back:hover { color: var(--accent); }
+
+.dateLine {
+    flex: 1;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+
+.hero {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 22px;
+    align-items: flex-start;
+}
+
+.heroImg {
+    width: 240px;
+    /* square source — anything wider crops the dish */
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.heroBody h1 {
+    margin: 0 0 6px;
+    font-size: 1.45rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.meta {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    text-transform: capitalize;
+    margin-bottom: 10px;
+}
+
+.macroChips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.chip {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+.chip b { color: var(--text); font-weight: 700; }
+
+.columns {
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) 1fr;
+    gap: 26px;
+    align-items: start;
+}
+
+.columns h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.count {
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+}
+
+.groceries {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+
+.checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.checklist label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+.checklist label:hover { background: var(--bg-10); }
+.checklist input {
+    accent-color: var(--accent);
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.checked span {
+    text-decoration: line-through;
+    color: var(--text-dim);
+}
+
+.instructionsText {
+    white-space: pre-wrap;
+    line-height: 1.65;
+    font-size: 0.95rem;
+    max-width: 65ch;
+}
+
+@media (max-width: 760px) {
+    .hero { flex-direction: column; gap: 12px; }
+    .heroImg { width: 100%; }
+    .columns { grid-template-columns: 1fr; gap: 20px; }
+}

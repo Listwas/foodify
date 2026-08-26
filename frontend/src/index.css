@@ -1,0 +1,206 @@
+:root {
+    --bg-0: hsl(20, 14%, 7%);
+    --bg-5: hsl(20, 12%, 11%);
+    --bg-10: hsl(20, 10%, 15%);
+    --bg-20: hsl(20, 8%, 22%);
+    --bg-30: hsl(20, 6%, 30%);
+    --text: hsl(30, 20%, 94%);
+    --text-dim: hsl(30, 8%, 65%);
+    --accent: hsl(16, 85%, 55%);
+    --accent-soft: hsla(16, 85%, 55%, 0.14);
+    --accent-ink: hsl(20, 20%, 8%);
+    --danger: hsl(0, 70%, 58%);
+
+    color: var(--text);
+    background-color: var(--bg-0);
+}
+
+[data-theme="light"] {
+    --bg-0: hsl(32, 44%, 96%);
+    --bg-5: hsl(32, 38%, 92%);
+    --bg-10: hsl(32, 30%, 87%);
+    --bg-20: hsl(32, 22%, 78%);
+    --bg-30: hsl(32, 16%, 64%);
+    --text: hsl(20, 22%, 12%);
+    --text-dim: hsl(20, 10%, 38%);
+    --accent: hsl(16, 80%, 46%);
+    --accent-soft: hsla(16, 80%, 46%, 0.12);
+    --accent-ink: hsl(32, 44%, 97%);
+    color: var(--text);
+    background-color: var(--bg-0);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    padding: 0;
+    margin: 0;
+    min-height: 100%;
+    font-family: "Inter", system-ui, sans-serif;
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+    color: inherit;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ios zooms inputs with fonts under 16px */
+@media (max-width: 640px) {
+    input, select, textarea {
+        font-size: 16px;
+    }
+}
+
+#root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    color: inherit;
+}
+
+.page {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+    flex: 1;
+}
+
+.btn {
+    border: 1px solid var(--bg-20);
+    background: var(--bg-10);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.btn:hover { background: var(--bg-20); }
+.btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+}
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-dim);
+}
+.btn.ghost:hover { color: var(--text); background: var(--bg-10); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+input.field, select.field, textarea.field {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-20);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.95rem;
+}
+
+/* Hover labels: add data-tip="…" to any element. Appears after a deliberate
+   pause rather than instantly, and only where hover really exists, so it never
+   fires on touch. aria-label still carries the meaning for screen readers. */
+@media (hover: hover) {
+    [data-tip] {
+        position: relative;
+    }
+    [data-tip]::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) translateY(3px);
+        background: var(--bg-20);
+        color: var(--text);
+        border: 1px solid var(--bg-30);
+        padding: 4px 9px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        z-index: 200;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.12s ease, transform 0.12s ease;
+        transition-delay: 0s;
+    }
+    [data-tip]:hover::after,
+    [data-tip]:focus-visible::after {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        transition-delay: 0.5s;
+    }
+    [data-tip][data-tip-below]::after {
+        bottom: auto;
+        top: calc(100% + 8px);
+    }
+}
+
+.macros {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    letter-spacing: 0.01em;
+}
+.macros b { color: var(--text); font-weight: 600; }
+
+.app-footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 18px 12px 22px;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+}
+.app-footer a { color: var(--text-dim); }
+
+.toast_container {
+    position: fixed;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 999;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+}
+
+.toast {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-20);
+    border-left: 3px solid var(--accent);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: toast_in 0.2s ease;
+    max-width: 320px;
+    cursor: pointer;
+}
+.toast_error { border-left-color: var(--danger); }
+@keyframes toast_in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.meal-img { background: var(--bg-10); }
+.meal-img[data-loaded="true"] { animation: img-in 0.35s ease; }
+@keyframes img-in { from { opacity: 0; } to { opacity: 1; } }

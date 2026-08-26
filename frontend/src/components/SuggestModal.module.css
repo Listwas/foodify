@@ -1,0 +1,120 @@
+.filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.filters select { flex: 1; min-width: 0; }
+
+.start {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 34px 0 26px;
+}
+.start button { font-size: 1rem; padding: 12px 22px; }
+
+.poolNote {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+}
+
+.candidate {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* the source image is a 500px square — a fixed 200px-tall letterbox both
+   upscaled it and cropped the dish in half */
+.img {
+    width: 100%;
+    max-width: 260px;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    border-radius: 10px;
+    align-self: center;
+}
+
+.reasons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.reason {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.73rem;
+    font-weight: 600;
+}
+
+.shortlist {
+    margin-bottom: 4px;
+}
+.shortlistHead {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+}
+.shortlistRow {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+.shortcut {
+    flex: 0 0 84px;
+    background: var(--bg-10);
+    border: 1px solid var(--bg-20);
+    border-radius: 9px;
+    padding: 6px;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+.shortcut:hover { border-color: var(--accent); }
+.shortcut img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 4px;
+}
+.shortcut span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.68rem;
+    line-height: 1.25;
+}
+
+.info h3 { margin: 0 0 4px; font-size: 1.15rem; }
+.meta {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-transform: capitalize;
+    margin-bottom: 4px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+.actions .primary { flex: 1; }
+
+.generateLink {
+    margin-top: 16px;
+    width: 100%;
+    text-align: center;
+}
