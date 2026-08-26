@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import photos
 import recommend
-from database import SessionLocal, RecipeFeedback
+from database import SessionLocal, Recipe, RecipeFeedback
 from tests.conftest import make_named, make_recipe
 
 PANTRY = ["garlic", "salt", "onion"]
@@ -230,3 +230,23 @@ def test_license_labels_are_not_double_prefixed():
     assert photos._license_label("cc0", "1.0") == "CC0 1.0"
     assert photos._license_label("by-nc", "4.0") == "CC BY-NC 4.0"
     assert photos._license_label("", "") == ""
+
+
+def test_index_cache_does_not_serve_stale_recipe_columns(client):
+    """The ingredient index is cached on a (row count) stamp, but the nutrition
+    backfill fills macros *in place* without changing any count. Cards must
+    still show the new values."""
+    r = make_named(client, "Backfilled Later", PANTRY + ["harissa"], "chicken")
+
+    db = SessionLocal()
+    recommend.build_index(db)  # warm the cache while calories are still NULL
+    assert client.get("/deck?limit=5").json()[0]["calories"] is None
+
+    row = db.query(Recipe).filter(Recipe.id == r["id"]).first()
+    row.calories = 512
+    row.prep_time_minutes = 25
+    db.commit()
+
+    card = next(c for c in client.get("/deck?limit=5").json() if c["id"] == r["id"])
+    assert card["calories"] == 512, "cached index served a stale recipe row"
+    assert card["prep_time_minutes"] == 25

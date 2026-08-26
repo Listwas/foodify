@@ -117,7 +117,13 @@ def build_index(db: Session) -> Index:
         db.query(Recipe.id).order_by(Recipe.id.desc()).limit(1).scalar() or 0,
     )
     if _index_cache and _index_cache[0] == stamp:
-        return _index_cache[1]
+        index = _index_cache[1]
+        # The ingredient scan is what's expensive and it only changes when rows
+        # are added — but recipe *columns* change without moving the stamp (the
+        # nutrition backfill fills macros and prep times in place). Re-read the
+        # rows every call so scoring and cards never serve stale values.
+        index.recipes = {r.id: r for r in db.query(Recipe).all()}
+        return index
 
     rows = db.query(Ingredient.recipe_id, Ingredient.name).all()
     raw = [(rid, normalize(name)) for rid, name in rows]
