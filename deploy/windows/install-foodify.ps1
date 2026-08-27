@@ -1,75 +1,62 @@
 <#
-    Foodify — instalator dla Windows
+    Foodify — instalacja na Windowsie.
 
-    Robi wszystko od zera na czystym komputerze: instaluje Pythona i Node.js
-    (przez winget, który jest wbudowany w Windows 10/11), pobiera aplikację,
-    buduje ją, przygotowuje bazę i tworzy skrót na pulpicie.
+    Nie uruchamiaj tego pliku wprost. Kliknij dwa razy INSTALUJ.bat
+    w głównym katalogu (ten wyżej o dwa poziomy).
 
-    Uruchomienie (PowerShell, NIE trzeba administratora):
-        powershell -ExecutionPolicy Bypass -File .\install-foodify.ps1
-
-    Można puszczać wielokrotnie — aktualizuje istniejącą instalację.
+    Skrypt działa "w miejscu": wszystko ląduje w rozpakowanym folderze,
+    nic nie jest kopiowane po dysku. Można go puszczać wielokrotnie —
+    aktualizuje to co trzeba i nigdy nie kasuje bazy z Twoimi danymi.
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [string]$InstallDir = "$env:LOCALAPPDATA\Foodify",
     [int]$Port = 8000,
-    # klucz Gemini jest opcjonalny: bez niego działa wszystko poza
-    # generowaniem nowych przepisów przez AI
+    # opcjonalny: bez niego działa wszystko poza generowaniem przepisów przez AI
     [string]$GeminiKey = "",
-    [switch]$NoAutostart,
-    [switch]$NoShortcut
+    [switch]$NoAutostart
 )
 
 $ErrorActionPreference = "Stop"
-$RepoZip = "https://github.com/Listwas/foodify/archive/refs/heads/main.zip"
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
-function Info($m)  { Write-Host "  $m" -ForegroundColor Cyan }
-function Ok($m)    { Write-Host "  OK  $m" -ForegroundColor Green }
-function Warn($m)  { Write-Host "  !   $m" -ForegroundColor Yellow }
-function Step($m)  { Write-Host "`n=== $m ===" -ForegroundColor White }
+function Info($m) { Write-Host "  $m" -ForegroundColor Cyan }
+function Ok($m)   { Write-Host "  [OK] $m" -ForegroundColor Green }
+function Warn($m) { Write-Host "  [!]  $m" -ForegroundColor Yellow }
+function Step($m) { Write-Host "`n=== $m ===" -ForegroundColor White }
 
 function Refresh-Path {
-    # po instalacji winget PATH w tej sesji jest nieaktualny
+    # po instalacji przez winget PATH w tej sesji jest jeszcze nieaktualny
     $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $user    = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = ($machine, $user | Where-Object { $_ }) -join ";"
 }
 
 function Have($name) {
-    # Uwaga: czysty Windows ma w PATH atrapę "python.exe" ze Sklepu Microsoft,
-    # która istnieje, ale nie jest Pythonem — samo Get-Command to za mało.
-    # Dlatego sprawdzamy, czy program faktycznie odpowiada numerem wersji.
+    # Czysty Windows ma w PATH atrapę "python.exe" ze Sklepu Microsoft, która
+    # istnieje, ale Pythonem nie jest. Dlatego sprawdzamy, czy program
+    # faktycznie odpowiada numerem wersji, a nie czy plik gdzieś leży.
     if (-not (Get-Command $name -ErrorAction SilentlyContinue)) { return $false }
-    try {
-        $out = & $name --version 2>&1 | Out-String
-    } catch {
-        return $false
-    }
+    try { $out = & $name --version 2>&1 | Out-String } catch { return $false }
     return ($out -match '\d+\.\d+')
 }
 
 function Ensure-Tool {
-    param([string]$Command, [string]$WingetId, [string]$Label)
+    param([string]$Command, [string]$WingetId, [string]$Label, [string]$Manual)
 
     if (Have $Command) { Ok "$Label już jest"; return }
 
-    if (-not (Have "winget")) {
-        throw @"
-Brakuje $Label, a nie mam czym go zainstalować (brak 'winget').
-Zainstaluj ręcznie i uruchom skrypt ponownie:
-  Python  -> https://www.python.org/downloads/  (zaznacz 'Add python.exe to PATH')
-  Node.js -> https://nodejs.org/en/download  (wersja LTS)
-"@
+    if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+        throw "Brakuje $Label i nie mam czym go zainstalowac (brak winget). Pobierz recznie: $Manual - potem uruchom INSTALUJ.bat jeszcze raz."
     }
 
-    Info "instaluję $Label (to potrwa chwilę)..."
-    winget install --id $WingetId --exact --silent --accept-source-agreements --accept-package-agreements | Out-Null
+    Info "instaluje $Label - moze wyskoczyc okienko z pytaniem, zgodz sie"
+    winget install --id $WingetId --exact --silent `
+        --accept-source-agreements --accept-package-agreements | Out-Null
     Refresh-Path
 
     if (-not (Have $Command)) {
-        throw "$Label zainstalowany, ale system go jeszcze nie widzi. Zamknij PowerShell, otwórz nowy i puść skrypt jeszcze raz."
+        throw "$Label sie zainstalowal, ale system jeszcze go nie widzi. Zamknij to okno i uruchom INSTALUJ.bat jeszcze raz."
     }
     Ok "$Label zainstalowany"
 }
@@ -77,95 +64,70 @@ Zainstaluj ręcznie i uruchom skrypt ponownie:
 # --------------------------------------------------------------------------
 
 Write-Host ""
-Write-Host "  FOODIFY — instalacja" -ForegroundColor Magenta
-Write-Host "  katalog: $InstallDir"
+Write-Host "  FOODIFY - instalacja" -ForegroundColor Magenta
 
-Step "1/6  Python i Node.js"
-Ensure-Tool -Command "python" -WingetId "Python.Python.3.12" -Label "Python"
-Ensure-Tool -Command "node"   -WingetId "OpenJS.NodeJS.LTS"  -Label "Node.js"
+# skrypt siedzi w deploy\windows\, katalog aplikacji jest dwa poziomy wyzej
+$root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$backend  = Join-Path $root "backend"
+$frontend = Join-Path $root "frontend"
 
-Step "2/6  pliki aplikacji"
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$localRepo = Resolve-Path (Join-Path $scriptDir "..\..") -ErrorAction SilentlyContinue
-
-if ($localRepo -and (Test-Path (Join-Path $localRepo "backend\main.py"))) {
-    # skrypt leży w kopii repo (pendrive / sklonowane) — użyj tych plików
-    Info "używam plików obok skryptu"
-    $source = $localRepo
-} else {
-    Info "pobieram z GitHuba..."
-    $tmp = Join-Path $env:TEMP "foodify-dl"
-    Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
-    New-Item -ItemType Directory -Path $tmp -Force | Out-Null
-    $zip = Join-Path $tmp "foodify.zip"
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -Uri $RepoZip -OutFile $zip -UseBasicParsing
-    Expand-Archive -Path $zip -DestinationPath $tmp -Force
-    $source = (Get-ChildItem $tmp -Directory | Where-Object { $_.Name -like "foodify-*" } | Select-Object -First 1).FullName
-    Ok "pobrane"
+if (-not (Test-Path (Join-Path $backend "main.py"))) {
+    throw "Nie znajduje plikow aplikacji. Rozpakuj CALY plik ZIP z GitHuba i uruchom INSTALUJ.bat z srodka rozpakowanego folderu."
 }
+Write-Host "  katalog: $root"
 
-New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-foreach ($part in @("backend", "frontend")) {
-    # /MIR sprząta usunięte pliki, ale wykluczenia (/XD /XF) zostają nietknięte,
-    # więc .venv, node_modules i baza przeżywają ponowną instalację
-    robocopy (Join-Path $source $part) (Join-Path $InstallDir $part) /MIR /NFL /NDL /NJH /NJS /NP `
-        /XD node_modules .venv dist __pycache__ /XF *.db .env | Out-Null
-    # robocopy: 0-7 to sukces, dopiero 8+ znaczy błąd
-    if ($LASTEXITCODE -ge 8) { throw "nie udało się skopiować '$part' (robocopy $LASTEXITCODE)" }
-}
-$global:LASTEXITCODE = 0
-Ok "pliki na miejscu"
+Step "1/5  Python i Node.js"
+Ensure-Tool -Command "python" -WingetId "Python.Python.3.12" -Label "Python" `
+            -Manual "https://www.python.org/downloads/ (zaznacz 'Add python.exe to PATH')"
+Ensure-Tool -Command "node" -WingetId "OpenJS.NodeJS.LTS" -Label "Node.js" `
+            -Manual "https://nodejs.org/en/download (wersja LTS)"
 
-Step "3/6  biblioteki Pythona"
-$backend = Join-Path $InstallDir "backend"
-$venvPy  = Join-Path $backend ".venv\Scripts\python.exe"
+Step "2/5  biblioteki Pythona"
+$venvPy = Join-Path $backend ".venv\Scripts\python.exe"
 if (-not (Test-Path $venvPy)) {
     python -m venv (Join-Path $backend ".venv")
 }
+if (-not (Test-Path $venvPy)) { throw "Nie udalo sie stworzyc srodowiska Pythona." }
 & $venvPy -m pip install --quiet --upgrade pip
 & $venvPy -m pip install --quiet -r (Join-Path $backend "requirements.txt")
+if ($LASTEXITCODE -ne 0) { throw "Nie udalo sie zainstalowac bibliotek Pythona." }
 Ok "gotowe"
 
-Step "4/6  budowanie interfejsu"
-$frontend = Join-Path $InstallDir "frontend"
+Step "3/5  budowanie aplikacji"
+Info "to trwa 1-2 minuty, poczekaj"
 Push-Location $frontend
 try {
-    # npm to .cmd, w skrypcie trzeba wywołać wprost
-    & cmd /c "npm install --silent --no-audit --no-fund" 2>&1 | Out-Null
+    & cmd /c "npm install --no-audit --no-fund --loglevel=error" 2>&1 | Out-Null
     & cmd /c "npm run build" 2>&1 | Out-Null
-    if (-not (Test-Path (Join-Path $frontend "dist\index.html"))) {
-        throw "build się nie udał — sprawdź czy Node.js działa (node --version)"
-    }
 } finally { Pop-Location }
-Ok "interfejs zbudowany"
+if (-not (Test-Path (Join-Path $frontend "dist\index.html"))) {
+    throw "Budowanie sie nie udalo. Sprawdz czy Node dziala: otworz nowe okno i wpisz  node --version"
+}
+Ok "aplikacja zbudowana"
 
-Step "5/6  przepisy"
-$db = Join-Path $backend "foodify.db"
-$shippedDb = Join-Path $scriptDir "foodify.db"
+Step "4/5  przepisy"
+$db   = Join-Path $backend "foodify.db"
+$seed = Join-Path $root "deploy\seed\foodify-seed.db"
 
 if (Test-Path $db) {
-    Ok "baza już istnieje — zostawiam bez zmian"
-} elseif (Test-Path $shippedDb) {
-    # najlepszy wariant: gotowa baza obok skryptu, wszystko od razu z makrami
-    Copy-Item $shippedDb $db
-    Ok "wgrana gotowa baza (z makrami)"
+    Ok "baza juz jest - zostawiam nietknieta"
+} elseif (Test-Path $seed) {
+    Copy-Item $seed $db
+    Ok "wgrane 511 przepisow z wyliczonymi makrami"
 } else {
-    Warn "brak gotowej bazy — pobieram przepisy z internetu, potrwa 5-10 minut"
-    if ($GeminiKey) {
-        Set-Content -Path (Join-Path $backend ".env") -Value "GEMINI_API_KEY=$GeminiKey" -Encoding ASCII
-    }
+    Warn "brak gotowej bazy - pobieram przepisy z internetu, 5-10 minut"
     Push-Location $backend
     try { & $venvPy "seed.py" } finally { Pop-Location }
-    Ok "przepisy pobrane"
 }
 
-if ($GeminiKey -and -not (Test-Path (Join-Path $backend ".env"))) {
+if ($GeminiKey) {
     Set-Content -Path (Join-Path $backend ".env") -Value "GEMINI_API_KEY=$GeminiKey" -Encoding ASCII
+    Ok "klucz AI zapisany"
 }
 
-Step "6/6  skróty"
-$launcher = Join-Path $InstallDir "Foodify.cmd"
+Step "5/5  skroty"
+# launcher zostaje w katalogu aplikacji, skroty tylko na niego wskazuja
+$launcher = Join-Path $root "Foodify.cmd"
 @"
 @echo off
 title Foodify
@@ -175,30 +137,30 @@ start "" http://localhost:$Port
 "@ | Set-Content -Path $launcher -Encoding ASCII
 
 $shell = New-Object -ComObject WScript.Shell
-if (-not $NoShortcut) {
-    $lnk = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Foodify.lnk"))
-    $lnk.TargetPath = $launcher
-    $lnk.WorkingDirectory = $InstallDir
-    $lnk.IconLocation = "$env:SystemRoot\System32\shell32.dll,44"
-    $lnk.Description = "Foodify — planer posiłków"
-    $lnk.Save()
-    Ok "skrót na pulpicie"
-}
+$lnk = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Foodify.lnk"))
+$lnk.TargetPath = $launcher
+$lnk.WorkingDirectory = $root
+$lnk.IconLocation = "$env:SystemRoot\System32\shell32.dll,44"
+$lnk.Description = "Foodify - planer posilkow"
+$lnk.Save()
+Ok "ikona na pulpicie"
+
 if (-not $NoAutostart) {
-    $startup = [Environment]::GetFolderPath("Startup")
-    $auto = $shell.CreateShortcut((Join-Path $startup "Foodify.lnk"))
+    $auto = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Startup")) "Foodify.lnk"))
     $auto.TargetPath = $launcher
-    $auto.WorkingDirectory = $InstallDir
+    $auto.WorkingDirectory = $root
     $auto.WindowStyle = 7   # zminimalizowane
     $auto.Save()
-    Ok "będzie startować razem z Windowsem"
+    Ok "bedzie startowac razem z Windowsem"
 }
 
 Write-Host ""
 Write-Host "  GOTOWE" -ForegroundColor Green
-Write-Host "  Aplikacja: " -NoNewline; Write-Host "http://localhost:$Port" -ForegroundColor Cyan
-Write-Host "  Na telefonie w tej samej sieci wifi: http://<ip-tego-kompa>:$Port"
-Write-Host "  (ip sprawdzisz komendą: ipconfig)"
+Write-Host "  Aplikacja otworzy sie za chwile: " -NoNewline
+Write-Host "http://localhost:$Port" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Uruchamiam..." -ForegroundColor White
+Write-Host "  Nastepnym razem odpalasz ikona Foodify z pulpitu."
+Write-Host "  NIE KASUJ tego folderu - aplikacja z niego dziala."
+Write-Host ""
+
 Start-Process -FilePath $launcher

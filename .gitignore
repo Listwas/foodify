@@ -11,3 +11,6 @@ frontend/dist/
 # local data & secrets
 *.db
 .env
+
+# ...poza gotową biblioteką przepisów, która jedzie z repo
+!deploy/seed/foodify-seed.db

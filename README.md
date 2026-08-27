@@ -84,6 +84,16 @@ cd backend && .venv/bin/uvicorn main:app --port 8000    # api with hot /docs
 cd frontend && npm run dev                              # vite on :5173, /api proxied
 ```
 
+## Windows: pobierz i kliknij
+
+1. **Code → Download ZIP** z tej strony
+2. rozpakuj gdzieś na stałe (nie do Pobranych)
+3. dwuklik na **`INSTALUJ.bat`**
+
+Instaluje Pythona i Node.js sam, buduje aplikację, wgrywa 511 przepisów
+z policzonymi makrami i robi ikonę na pulpicie. Szczegóły i rozwiązywanie
+problemów: **[deploy/windows/CZYTAJ-TO.md](deploy/windows/CZYTAJ-TO.md)**.
+
 ## install it on a phone
 
 The frontend is a PWA — open it on a phone and use *Add to Home Screen*
