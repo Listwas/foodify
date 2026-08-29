@@ -1,0 +1,5 @@
+# Foodify is a single-page app: every route is rendered by the client, so a
+# deep link like /discover/history has to be served the app shell rather than a
+# 404. Cloudflare Pages applies this after static files and Functions, so real
+# assets and /api/* are unaffected.
+/*  /index.html  200

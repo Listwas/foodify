@@ -1,0 +1,5 @@
+# Only the maintenance scripts need Python. The app itself is static —
+# no server, no database, nothing to install to run it.
+requests
+google-genai
+python-dotenv

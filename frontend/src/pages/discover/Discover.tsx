@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiDeck, apiFeedback, apiUndoFeedback } from "../../lib/api"
-import type { DeckCard, Verdict } from "../../lib/types"
+import type { RecipeFull, Verdict } from "../../lib/types"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
 import { useSwipe, type SwipeDir } from "../../lib/useSwipe"
 import { useToast } from "../../context/ToastContext"
+import { clearFeedback, getState, lastJudged, setFeedback } from "../../store"
+import { useStructuralMap } from "../../data/library"
+import { useIndex } from "../../data/taste"
+import { deck } from "../../engine"
+import Icon from "../../components/Icon"
 import s from "./Discover.module.css"
+
+const DECK_SIZE = 24
+
+type Card = RecipeFull & { reasons: string[] }
 
 const VERDICT_OF: Record<SwipeDir, Verdict> = {
     right: "like",
@@ -14,14 +21,10 @@ const VERDICT_OF: Record<SwipeDir, Verdict> = {
     down: "hidden",
 }
 
-const LABEL: Record<SwipeDir, string> = {
-    right: "Yes",
-    left: "Pass",
-    down: "Hide",
-}
+const LABEL: Record<SwipeDir, string> = { right: "Yes", left: "Pass", down: "Hide" }
 
-function Card({ card, onCommit, top }: {
-    card: DeckCard
+function SwipeCard({ card, onCommit, top }: {
+    card: Card
     onCommit: (dir: SwipeDir) => void
     top: boolean
 }) {
@@ -35,10 +38,7 @@ function Card({ card, onCommit, top }: {
             {...(top ? handlers : {})}
         >
             {intent.dir && top && (
-                <div
-                    className={`${s.stamp} ${s[intent.dir]}`}
-                    style={{ opacity: intent.strength }}
-                >
+                <div className={`${s.stamp} ${s[intent.dir]}`} style={{ opacity: intent.strength }}>
                     {LABEL[intent.dir]}
                 </div>
             )}
@@ -53,7 +53,9 @@ function Card({ card, onCommit, top }: {
                     onLoad={e => e.currentTarget.setAttribute("data-loaded", "true")}
                 />
             ) : (
-                <div className={`${s.img} ${s.placeholder}`}>{card.source === "ai" ? "✨" : "🍽"}</div>
+                <div className={`${s.img} ${s.placeholder}`}>
+                    <Icon name={card.source === "ai" ? "sparkle" : "plate"} size={40} />
+                </div>
             )}
             <div className={s.body}>
                 <h2>{card.title}</h2>
@@ -74,67 +76,77 @@ function Card({ card, onCommit, top }: {
 
 function Discover() {
     const { showToast } = useToast()
-    const queryClient = useQueryClient()
-    const [queue, setQueue] = useState<DeckCard[]>([])
+    const index = useIndex()
+    // deliberately the verdict-free map: a swipe must not invalidate the deal
+    const recipes = useStructuralMap()
+    const [queue, setQueue] = useState<Card[]>([])
+    const [undoStack, setUndoStack] = useState<Card[]>([])
     const [swiped, setSwiped] = useState(0)
+    const [dealt, setDealt] = useState(false)
 
-    const { data, isLoading, refetch } = useQuery({
-        queryKey: ["deck"],
-        queryFn: () => apiDeck(20),
-        staleTime: 0,
-        gcTime: 0,
-    })
+    /**
+     * Deal a fresh deck. Reads the store directly rather than through a hook so
+     * that a swipe — which changes the taste signals — doesn't invalidate this
+     * callback and reshuffle the cards under the user's thumb.
+     */
+    const dealCards = useCallback((keep: Card[] = []): Card[] => {
+        const state = getState()
+        const held = new Set(keep.map(c => c.id))
+        const cards = deck(
+            index,
+            { feedback: state.feedback, prefs: state.prefs, plan: state.plan },
+            DECK_SIZE,
+        )
+        const fresh = cards
+            .filter(c => !held.has(c.recipe.id))
+            .map(c => ({ ...recipes.get(c.recipe.id)!, reasons: c.reasons }))
+            .filter(c => c.id != null)
+        return [...keep, ...fresh]
+    }, [index, recipes])
 
     useEffect(() => {
-        if (data) setQueue(data)
-    }, [data])
+        setQueue(dealCards())
+        setDealt(true)
+    }, [dealCards])
 
-    const invalidate = useCallback(() => {
-        // the taste model just changed — everything downstream is stale
-        queryClient.invalidateQueries({ queryKey: ["recipes"] })
-        queryClient.invalidateQueries({ queryKey: ["recommendations"] })
-        queryClient.invalidateQueries({ queryKey: ["shortlist"] })
-        queryClient.invalidateQueries({ queryKey: ["profile"] })
-    }, [queryClient])
+    const commit = useCallback((dir: SwipeDir) => {
+        // Recording the swipe must happen here rather than inside a setQueue
+        // updater: React is free to run an updater more than once, and it did —
+        // one arrow key was landing as two swipes. Updaters stay pure.
+        const [card, ...rest] = queue
+        if (!card) return
+        setFeedback(card.id, VERDICT_OF[dir])
+        setUndoStack(stack => [card, ...stack])
+        setSwiped(n => n + 1)
+        // top up before the stack empties, keeping what's already dealt. The
+        // store has already recorded the verdict, so the new cards exclude it.
+        setQueue(rest.length <= 3 ? dealCards(rest) : rest)
+    }, [queue, dealCards])
 
-    const send = useMutation({
-        mutationFn: ({ id, verdict }: { id: number; verdict: Verdict }) =>
-            apiFeedback(id, verdict),
-        onSuccess: invalidate,
-        onError: (e: Error) => showToast(e.message, "error"),
-    })
-
-    const undo = useMutation({
-        mutationFn: apiUndoFeedback,
-        onSuccess: result => {
-            invalidate()
+    const undo = useCallback(() => {
+        const card = undoStack[0]
+        if (card) {
+            clearFeedback(card.id)
+            setUndoStack(stack => stack.slice(1))
             setSwiped(n => Math.max(0, n - 1))
-            if (result.card) {
-                // put back the card that was actually swiped, not whatever the
-                // recommender would serve next
-                setQueue(q => [result.card!, ...q.filter(c => c.id !== result.card!.id)])
-                showToast(`Back: ${result.card.title}`)
-            } else {
-                refetch()
-                showToast("Undone")
-            }
-        },
-        onError: () => showToast("Nothing to undo", "error"),
-    })
-
-    const commit = useCallback(
-        (dir: SwipeDir) => {
-            setQueue(q => {
-                const [card, ...rest] = q
-                if (card) send.mutate({ id: card.id, verdict: VERDICT_OF[dir] })
-                // top up before the stack empties
-                if (rest.length <= 3) refetch()
-                return rest
-            })
-            setSwiped(n => n + 1)
-        },
-        [send, refetch]
-    )
+            // put back the card that was actually swiped, not whatever the
+            // recommender would serve next
+            setQueue(q => [card, ...q.filter(c => c.id !== card.id)])
+            showToast(`Back: ${card.title}`)
+            return
+        }
+        // nothing swiped this session — fall back to the last verdict on record,
+        // so undo still works after a reload
+        const id = lastJudged()
+        const recipe = id == null ? undefined : recipes.get(id)
+        if (!recipe) {
+            showToast("Nothing to undo", "error")
+            return
+        }
+        clearFeedback(recipe.id)
+        setQueue(q => [{ ...recipe, reasons: [] }, ...q.filter(c => c.id !== recipe.id)])
+        showToast(`Back: ${recipe.title}`)
+    }, [undoStack, recipes, showToast])
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -151,7 +163,7 @@ function Discover() {
 
     return (
         <div className="page">
-            <div className={s.header}>
+            <div className="page-head">
                 <h1>Discover</h1>
                 <div className={s.headerRight}>
                     {swiped > 0 && <span className={s.counter}>{swiped} swiped</span>}
@@ -167,7 +179,7 @@ function Discover() {
             <div className={s.stage}>
                 {visible.length > 0 ? (
                     visible.map((card, i) => (
-                        <Card
+                        <SwipeCard
                             key={card.id}
                             card={card}
                             top={i === visible.length - 1}
@@ -176,9 +188,9 @@ function Discover() {
                     ))
                 ) : (
                     <div className={s.empty}>
-                        {isLoading ? "Dealing cards…" : (
+                        {!dealt ? "Dealing cards…" : (
                             <>
-                                <div className={s.emptyIcon}>🍽</div>
+                                <Icon name="plate" size={34} />
                                 <p>You've been through everything for now.</p>
                                 <Link to="/recipes" className="btn">Browse the library</Link>
                             </>
@@ -195,7 +207,7 @@ function Discover() {
                     aria-label="pass"
                     data-tip="Pass — not right now"
                 >
-                    ✕
+                    <Icon name="close" size={22} />
                 </button>
                 <button
                     className={`${s.action} ${s.hideBtn}`}
@@ -204,16 +216,15 @@ function Discover() {
                     aria-label="hide"
                     data-tip="Hide — never show me this"
                 >
-                    🚫
+                    <Icon name="ban" size={19} />
                 </button>
                 <button
                     className={`${s.action} ${s.undoBtn}`}
-                    onClick={() => undo.mutate()}
-                    disabled={undo.isPending}
+                    onClick={undo}
                     aria-label="undo last swipe"
                     data-tip="Undo last swipe"
                 >
-                    ↺
+                    <Icon name="undo" size={19} />
                 </button>
                 <button
                     className={`${s.action} ${s.like}`}
@@ -222,7 +233,7 @@ function Discover() {
                     aria-label="like"
                     data-tip="Like — add to your list"
                 >
-                    ♥
+                    <Icon name="heart" size={22} filled />
                 </button>
             </div>
         </div>

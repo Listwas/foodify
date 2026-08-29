@@ -13,6 +13,12 @@
 }
 .back:hover { color: var(--accent); }
 
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s1);
+}
+
 .heroImgWrap {
     position: relative;
     flex-shrink: 0;
@@ -42,6 +48,9 @@
 
 .photoToggle {
     position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     bottom: 8px;
     right: 8px;
     background: rgba(0, 0, 0, 0.68);

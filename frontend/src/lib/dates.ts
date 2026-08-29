@@ -3,6 +3,21 @@ const pad = (n: number) => String(n).padStart(2, "0")
 /** local yyyy-mm-dd (toISOString would shift across midnight in non-UTC zones) */
 export const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
+export const today = () => iso(new Date())
+
+/**
+ * Whole days from `from` to `to`, both yyyy-mm-dd. Negative when `to` is
+ * earlier. Compared as UTC midnights so a daylight-saving change in between
+ * can't turn a day into 23 or 25 hours and round the answer off by one.
+ */
+export function daysBetween(from: string, to: string): number {
+  const utc = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number)
+    return Date.UTC(y, m - 1, d)
+  }
+  return Math.round((utc(to) - utc(from)) / 86_400_000)
+}
+
 export function startOfWeek(d: Date): Date {
   const copy = new Date(d)
   copy.setHours(0, 0, 0, 0)

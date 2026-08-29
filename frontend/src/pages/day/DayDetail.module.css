@@ -13,6 +13,22 @@
 }
 .back:hover { color: var(--accent); }
 
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s1);
+}
+
+.fullLink {
+    display: inline-block;
+    margin-top: var(--s3);
+    color: var(--accent);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.fullLink:hover { text-decoration: underline; }
+
 .dateLine {
     flex: 1;
     color: var(--text-dim);

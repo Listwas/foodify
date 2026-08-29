@@ -1,143 +1,100 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiGrocery, apiMarkCooked, apiPlanRange, apiRecipe, apiSetCheck } from "../../lib/api"
-import type { GroceryList } from "../../lib/types"
 import { dayLong } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
 import { useToast } from "../../context/ToastContext"
+import { markCooked, setCheck, useAppState } from "../../store"
+import { groceryKey, planKey } from "../../store/types"
+import { useRecipeMap } from "../../data/library"
+import Icon from "../../components/Icon"
 import SuggestModal from "../../components/SuggestModal"
 import GenerateModal from "../../components/GenerateModal"
 import s from "./DayDetail.module.css"
 
+const SLOT = "dinner"
+
 function DayDetail() {
-    const { id } = useParams()
+    const { date } = useParams()
     const { showToast } = useToast()
-    const queryClient = useQueryClient()
     const [modal, setModal] = useState<"suggest" | "generate" | null>(null)
+    const state = useAppState()
+    const recipes = useRecipeMap()
 
-    const grocery = useQuery({
-        queryKey: ["grocery", id],
-        queryFn: () => apiGrocery(id!),
-        retry: (count, err) => !(err instanceof Error && err.message.includes("not found")) && count < 2,
-    })
-    const recipeId = grocery.data?.recipe_id
-    const recipe = useQuery({
-        queryKey: ["recipe", recipeId],
-        queryFn: () => apiRecipe(recipeId!),
-        enabled: recipeId != null,
-    })
+    const slot = date ? state.plan[planKey(date)] : undefined
+    const recipe = slot && recipes.get(slot.recipeId)
 
-    // the plan entry carries the cooked flag; the grocery payload doesn't
-    const plan = useQuery({
-        queryKey: ["plan-entry", id, grocery.data?.date],
-        queryFn: () => apiPlanRange(grocery.data!.date, grocery.data!.date),
-        enabled: !!grocery.data?.date,
-    })
-    const entry = plan.data?.find(p => p.id === Number(id))
-
-    const cook = useMutation({
-        mutationFn: (completed: boolean) => apiMarkCooked(Number(id), completed),
-        onSuccess: e => {
-            queryClient.invalidateQueries({ queryKey: ["plan-entry"] })
-            queryClient.invalidateQueries({ queryKey: ["week"] })
-            // cooking it is the strongest signal the recommender gets
-            queryClient.invalidateQueries({ queryKey: ["recommendations"] })
-            queryClient.invalidateQueries({ queryKey: ["profile"] })
-            showToast(e.status === "completed" ? "Marked as cooked 🍳" : "Marked as not cooked")
-        },
-        onError: (e: Error) => showToast(e.message, "error"),
-    })
-
-    const toggle = useMutation({
-        mutationFn: ({ ingredientId, checked }: { ingredientId: number; checked: boolean }) =>
-            apiSetCheck(Number(id), ingredientId, checked),
-        onMutate: async ({ ingredientId, checked }) => {
-            await queryClient.cancelQueries({ queryKey: ["grocery", id] })
-            const previous = queryClient.getQueryData<GroceryList>(["grocery", id])
-            queryClient.setQueryData<GroceryList>(["grocery", id], old =>
-                old && {
-                    ...old,
-                    items: old.items.map(i =>
-                        i.ingredient_id === ingredientId ? { ...i, checked } : i
-                    ),
-                }
-            )
-            return { previous }
-        },
-        onError: (e: Error, _vars, ctx) => {
-            if (ctx?.previous) queryClient.setQueryData(["grocery", id], ctx.previous)
-            showToast(e.message, "error")
-        },
-        onSettled: () => queryClient.invalidateQueries({ queryKey: ["grocery", id] }),
-    })
-
-    if (grocery.isLoading) return <div className="page" />
-    if (grocery.isError || !grocery.data) {
+    if (!date || !slot || !recipe) {
         return (
             <div className="page">
                 <p>This meal isn't planned anymore.</p>
-                <Link to="/" className="btn">‹ Back to the week</Link>
+                <Link to="/" className="btn">
+                    <Icon name="left" size={15} />
+                    Back to the week
+                </Link>
             </div>
         )
     }
 
-    const g = grocery.data
-    const r = recipe.data
-    const date = new Date(`${g.date}T00:00`)
-    const checkedCount = g.items.filter(i => i.checked).length
+    const cooked = slot.status === "completed"
+    const items = recipe.ingredients.map(i => ({
+        ...i,
+        checked: state.grocery[groceryKey(date, SLOT, i.id)] ?? false,
+    }))
+    const checkedCount = items.filter(i => i.checked).length
+
+    const cook = () => {
+        markCooked(date, !cooked)
+        showToast(cooked ? "Marked as not cooked" : "Marked as cooked")
+    }
 
     return (
         <div className="page">
             <div className={s.top}>
-                <Link to="/" className={s.back}>‹ Week</Link>
-                <div className={s.dateLine}>
-                    {dayLong(date)} · {g.meal_slot}
-                </div>
+                <Link to="/" className={s.back}>
+                    <Icon name="left" size={15} />
+                    Week
+                </Link>
+                <div className={s.dateLine}>{dayLong(new Date(`${date}T00:00`))} · {SLOT}</div>
                 <button
-                    className={`btn ${entry?.status === "completed" ? "primary" : ""}`}
-                    onClick={() => cook.mutate(entry?.status !== "completed")}
-                    disabled={cook.isPending || !entry}
+                    className={`btn ${cooked ? "primary" : ""}`}
+                    onClick={cook}
                     data-tip="Cooking it teaches the app what you actually make"
                 >
-                    {entry?.status === "completed" ? "✓ Cooked" : "Mark cooked"}
+                    <Icon name="check" size={16} />
+                    {cooked ? "Cooked" : "Mark cooked"}
                 </button>
-                <button
-                    className="btn"
-                    onClick={() => setModal("suggest")}
-                    data-tip="Swap for something else"
-                >
-                    ⇄ Swap
+                <button className="btn" onClick={() => setModal("suggest")} data-tip="Swap for something else">
+                    <Icon name="swap" size={16} />
+                    Swap
                 </button>
             </div>
 
             <div className={s.hero}>
-                {r && mealImage(r.image_url, "hero") && (
+                {mealImage(recipe.image_url, "hero") && (
                     <img
                         className={`${s.heroImg} meal-img`}
-                        src={mealImage(r.image_url, "hero")!}
+                        src={mealImage(recipe.image_url, "hero")!}
                         width={imageBox("hero")}
                         height={imageBox("hero")}
                         alt=""
                     />
                 )}
                 <div className={s.heroBody}>
-                    <h1>{g.recipe_title}</h1>
-                    {r && (
-                        <div className={s.meta}>
-                            {r.protein_type}
-                            {r.prep_time_minutes != null && <> · {r.prep_time_minutes} min</>}
-                            {r.source === "ai" && <> · ✨ generated</>}
-                        </div>
-                    )}
-                    {r && r.calories != null && (
+                    <h1>{recipe.title}</h1>
+                    <div className={s.meta}>
+                        {recipe.protein_type}
+                        {recipe.prep_time_minutes != null && <> · {recipe.prep_time_minutes} min</>}
+                        {recipe.source === "ai" && <> · generated</>}
+                    </div>
+                    {recipe.calories != null && (
                         <div className={s.macroChips}>
-                            <span className={s.chip}><b>{r.calories}</b> kcal</span>
-                            <span className={s.chip}><b>{Math.round(r.protein_g ?? 0)}g</b> protein</span>
-                            <span className={s.chip}><b>{Math.round(r.carbs_g ?? 0)}g</b> carbs</span>
-                            <span className={s.chip}><b>{Math.round(r.sugar_g ?? 0)}g</b> sugar</span>
+                            <span className={s.chip}><b>{recipe.calories}</b> kcal</span>
+                            <span className={s.chip}><b>{Math.round(recipe.protein_g ?? 0)}g</b> protein</span>
+                            <span className={s.chip}><b>{Math.round(recipe.carbs_g ?? 0)}g</b> carbs</span>
+                            <span className={s.chip}><b>{Math.round(recipe.sugar_g ?? 0)}g</b> sugar</span>
                         </div>
                     )}
+                    <Link to={`/recipe/${recipe.id}`} className={s.fullLink}>Full recipe →</Link>
                 </div>
             </div>
 
@@ -145,21 +102,16 @@ function DayDetail() {
                 <section className={s.groceries}>
                     <h2>
                         Groceries
-                        <span className={s.count}>{checkedCount}/{g.items.length}</span>
+                        <span className={s.count}>{checkedCount}/{items.length}</span>
                     </h2>
                     <ul className={s.checklist}>
-                        {g.items.map(item => (
-                            <li key={item.ingredient_id}>
+                        {items.map(item => (
+                            <li key={item.id}>
                                 <label className={item.checked ? s.checked : ""}>
                                     <input
                                         type="checkbox"
                                         checked={item.checked}
-                                        onChange={e =>
-                                            toggle.mutate({
-                                                ingredientId: item.ingredient_id,
-                                                checked: e.target.checked,
-                                            })
-                                        }
+                                        onChange={e => setCheck(date, SLOT, item.id, e.target.checked)}
                                     />
                                     <span>{ingredientLabel(item)}</span>
                                 </label>
@@ -171,21 +123,21 @@ function DayDetail() {
                 <section className={s.instructions}>
                     <h2>Instructions</h2>
                     <div className={s.instructionsText}>
-                        {r ? r.instructions || "No instructions recorded." : "…"}
+                        {recipe.instructions || "No instructions recorded."}
                     </div>
                 </section>
             </div>
 
             {modal === "suggest" && (
                 <SuggestModal
-                    date={g.date}
-                    currentRecipeId={g.recipe_id}
+                    date={date}
+                    currentRecipeId={recipe.id}
                     onGenerate={() => setModal("generate")}
                     onClose={() => setModal(null)}
                 />
             )}
             {modal === "generate" && (
-                <GenerateModal date={g.date} onClose={() => setModal(null)} />
+                <GenerateModal date={date} onClose={() => setModal(null)} />
             )}
         </div>
     )

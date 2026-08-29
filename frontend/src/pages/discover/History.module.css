@@ -1,16 +1,11 @@
-.header {
-    margin-bottom: 6px;
-}
-.header h1 {
-    margin: 4px 0 0;
-    font-size: 1.5rem;
-    letter-spacing: -0.02em;
-}
-
 .back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s1);
+    margin-bottom: var(--s2);
     text-decoration: none;
     color: var(--text-dim);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
 }
 .back:hover { color: var(--accent); }
 
@@ -84,11 +79,10 @@
     flex-shrink: 0;
 }
 .thumbPlaceholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
+    display: grid;
+    place-items: center;
     background: var(--bg-10);
+    color: var(--text-dim);
 }
 
 .text { min-width: 0; }
@@ -108,20 +102,26 @@
 }
 .dot { opacity: 0.5; }
 
-.like { color: hsl(145, 60%, 50%); font-weight: 600; }
-.dislike { color: var(--text-dim); font-weight: 600; }
-.hidden { color: var(--danger); font-weight: 600; }
+.verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
+.like { color: hsl(145, 60%, 50%); }
+.dislike { color: var(--text-dim); }
+.hidden { color: var(--danger); }
 
 .actions {
     display: flex;
-    gap: 5px;
+    gap: var(--s1);
     flex-shrink: 0;
 }
-.actions .btn { padding: 5px 10px; font-size: 0.82rem; }
 
 @media (max-width: 560px) {
     .row { flex-wrap: wrap; }
     .rowMain { flex-basis: 100%; }
     .actions { flex-basis: 100%; }
-    .actions .btn { flex: 1; }
+    .actions > * { flex: 1; }
 }

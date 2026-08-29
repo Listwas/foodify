@@ -1,40 +1,39 @@
-import { Link, useLocation } from "react-router-dom"
+import { NavLink } from "react-router-dom"
+import Icon, { type IconName } from "./Icon"
 import s from "./Nav.module.css"
 
+const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
+    { to: "/", label: "Plan", icon: "calendar", end: true },
+    { to: "/discover", label: "Discover", icon: "compass" },
+    { to: "/recipes", label: "Recipes", icon: "list" },
+    { to: "/profile", label: "Taste", icon: "heart" },
+]
+
+/**
+ * Top bar on desktop, bottom tab bar on phones.
+ *
+ * The app is installed to a home screen and used one-handed while standing in a
+ * kitchen, so navigation belongs within reach of a thumb rather than in the far
+ * corner of the screen.
+ */
 function Nav() {
-    const location = useLocation()
-
-    const toggleTheme = () => {
-        const current = document.documentElement.getAttribute("data-theme")
-        const next = current === "light" ? "dark" : "light"
-        document.documentElement.setAttribute("data-theme", next)
-        localStorage.setItem("theme", next)
-    }
-
-    const isActive = (path: string) =>
-        (path === "/" ? location.pathname === "/" : location.pathname.startsWith(path)) ? s.active : ""
-
     return (
-        <div className={s.nav_outer}>
-            <nav className={s.nav_container}>
-                <Link to="/" className={s.logo}>foodify</Link>
-                <Link to="/" className={`${s.nav_link} ${isActive("/")}`}>Plan</Link>
-                <Link to="/discover" className={`${s.nav_link} ${isActive("/discover")}`}>Discover</Link>
-                <Link to="/recipes" className={`${s.nav_link} ${isActive("/recipe")}`}>Recipes</Link>
-                <Link to="/profile" className={`${s.nav_link} ${isActive("/profile")}`}>Taste</Link>
-                <div className={s.spacer} />
-                <button className={s.theme_btn} onClick={toggleTheme} aria-label="toggle theme">◑</button>
-            </nav>
-        </div>
-    )
-}
-
-export function Footer() {
-    return (
-        <footer className="app-footer">
-            foodify · recipe data from{" "}
-            <a href="https://www.themealdb.com" target="_blank" rel="noopener noreferrer">TheMealDB</a>
-        </footer>
+        <nav className={s.nav}>
+            <span className={s.logo}>foodify</span>
+            <div className={s.tabs}>
+                {TABS.map(tab => (
+                    <NavLink
+                        key={tab.to}
+                        to={tab.to}
+                        end={tab.end}
+                        className={({ isActive }) => `${s.tab} ${isActive ? s.active : ""}`}
+                    >
+                        <Icon name={tab.icon} size={20} />
+                        <span className={s.label}>{tab.label}</span>
+                    </NavLink>
+                ))}
+            </div>
+        </nav>
     )
 }
 

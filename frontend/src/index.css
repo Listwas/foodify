@@ -10,6 +10,21 @@
     --accent-soft: hsla(16, 85%, 55%, 0.14);
     --accent-ink: hsl(20, 20%, 8%);
     --danger: hsl(0, 70%, 58%);
+    --shadow: 0 6px 20px hsla(20, 30%, 2%, 0.45);
+
+    /* one spacing scale for the whole app — every gap and pad is a step on it */
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 24px;
+    --s6: 36px;
+
+    --r1: 8px;
+    --r2: 12px;
+    --r3: 18px;
+
+    --nav-h: 56px;
 
     color: var(--text);
     background-color: var(--bg-0);
@@ -26,6 +41,7 @@
     --accent: hsl(16, 80%, 46%);
     --accent-soft: hsla(16, 80%, 46%, 0.12);
     --accent-ink: hsl(32, 44%, 97%);
+    --shadow: 0 6px 20px hsla(20, 30%, 30%, 0.16);
     color: var(--text);
     background-color: var(--bg-0);
 }
@@ -70,22 +86,60 @@ a {
     color: inherit;
 }
 
+h1 {
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    margin: 0;
+}
+
+h2 {
+    font-size: 1.05rem;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
 .page {
-    width: min(1100px, 100%);
+    width: min(1000px, 100%);
     margin: 0 auto;
-    padding: 20px 16px 48px;
+    padding: var(--s5) var(--s4) var(--s6);
     flex: 1;
 }
 
+/* the mobile tab bar is fixed, so the page has to end above it */
+@media (max-width: 720px) {
+    .page {
+        padding-bottom: calc(var(--nav-h) + var(--s5) + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* A page's title row: heading left, controls right, wrapping on narrow screens. */
+.page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s3);
+    flex-wrap: wrap;
+    margin-bottom: var(--s4);
+}
+
 .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s2);
     border: 1px solid var(--bg-20);
     background: var(--bg-10);
     color: var(--text);
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
+    border-radius: var(--r1);
+    padding: 8px 13px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .btn:hover { background: var(--bg-20); }
 .btn.primary {
@@ -101,14 +155,27 @@ a {
     color: var(--text-dim);
 }
 .btn.ghost:hover { color: var(--text); background: var(--bg-10); }
-.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:disabled:hover { background: var(--bg-10); }
+
+/* square button holding a single icon */
+.btn.icon {
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    flex: none;
+}
 
 input.field, select.field, textarea.field {
     background: var(--bg-5);
     border: 1px solid var(--bg-20);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.95rem;
+    border-radius: var(--r1);
+    padding: 9px 12px;
+    font-size: 0.9rem;
+}
+input.field:focus, select.field:focus, textarea.field:focus {
+    border-color: var(--bg-30);
 }
 
 /* Hover labels: add data-tip="…" to any element. Appears after a deliberate
@@ -128,7 +195,7 @@ input.field, select.field, textarea.field {
         color: var(--text);
         border: 1px solid var(--bg-30);
         padding: 4px 9px;
-        border-radius: 6px;
+        border-radius: var(--r1);
         font-size: 0.75rem;
         font-weight: 500;
         line-height: 1;
@@ -136,7 +203,7 @@ input.field, select.field, textarea.field {
         pointer-events: none;
         opacity: 0;
         z-index: 200;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: var(--shadow);
         transition: opacity 0.12s ease, transform 0.12s ease;
         transition-delay: 0s;
     }
@@ -154,32 +221,32 @@ input.field, select.field, textarea.field {
 
 .macros {
     color: var(--text-dim);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     letter-spacing: 0.01em;
 }
 .macros b { color: var(--text); font-weight: 600; }
 
-.app-footer {
-    margin-top: auto;
-    text-align: center;
-    padding: 18px 12px calc(22px + env(safe-area-inset-bottom, 0px));
+.muted {
     color: var(--text-dim);
-    font-size: 0.78rem;
+    font-size: 0.875rem;
 }
-.app-footer a { color: var(--text-dim); }
 
 .toast_container {
     position: fixed;
-    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--nav-h) + 20px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: var(--s2);
     z-index: 999;
     width: max-content;
     max-width: calc(100vw - 32px);
+}
+
+@media (min-width: 721px) {
+    .toast_container { bottom: 32px; }
 }
 
 .toast {
@@ -187,10 +254,10 @@ input.field, select.field, textarea.field {
     border: 1px solid var(--bg-20);
     border-left: 3px solid var(--accent);
     color: var(--text);
-    padding: 12px 18px;
-    border-radius: 6px;
+    padding: 11px 16px;
+    border-radius: var(--r1);
     font-size: 0.85rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow);
     animation: toast_in 0.2s ease;
     max-width: 320px;
     cursor: pointer;
@@ -204,3 +271,10 @@ input.field, select.field, textarea.field {
 .meal-img { background: var(--bg-10); }
 .meal-img[data-loaded="true"] { animation: img-in 0.35s ease; }
 @keyframes img-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

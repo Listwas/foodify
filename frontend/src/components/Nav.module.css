@@ -1,60 +1,83 @@
-.nav_outer {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--bg-5);
-    border-bottom: 1px solid var(--bg-10);
-    /* installed as a PWA the page runs under the status bar / notch */
-    padding-top: env(safe-area-inset-top, 0px);
-}
-
-.nav_container {
-    width: min(1100px, 100%);
-    margin: 0 auto;
-    padding: 10px 16px;
+.nav {
     display: flex;
     align-items: center;
-    gap: 18px;
-}
-
-@media (max-width: 560px) {
-    .nav_container { gap: 12px; padding: 10px 12px; }
-    .logo { font-size: 1rem; margin-right: 0; }
-    .nav_link { font-size: 0.85rem; }
+    gap: var(--s5);
+    width: min(1000px, 100%);
+    margin: 0 auto;
+    padding: var(--s3) var(--s4);
 }
 
 .logo {
-    font-weight: 800;
-    font-size: 1.15rem;
+    font-weight: 700;
+    font-size: 1.05rem;
     letter-spacing: -0.02em;
     color: var(--accent);
-    text-decoration: none;
-    margin-right: 6px;
 }
 
-.nav_link {
+.tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--s1);
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: 7px 12px;
+    border-radius: var(--r1);
+    text-decoration: none;
     color: var(--text-dim);
-    text-decoration: none;
-    font-size: 0.92rem;
-    padding: 4px 2px;
-    border-bottom: 2px solid transparent;
-}
-.nav_link:hover { color: var(--text); }
-.nav_link.active {
-    color: var(--text);
-    border-bottom-color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.15s ease, background 0.15s ease;
 }
 
-.spacer { flex: 1; }
+.tab:hover { color: var(--text); background: var(--bg-5); }
 
-.theme_btn {
-    background: none;
-    border: 1px solid var(--bg-20);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 1rem;
-    line-height: 1;
-    padding: 6px 9px;
-    cursor: pointer;
+.tab.active {
+    color: var(--accent);
+    background: var(--accent-soft);
 }
-.theme_btn:hover { background: var(--bg-10); }
+
+/* Phones: a fixed tab bar at the bottom, in reach of a thumb. */
+@media (max-width: 720px) {
+    .nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        width: 100%;
+        gap: 0;
+        padding: 0 var(--s2) env(safe-area-inset-bottom, 0px);
+        background: var(--bg-5);
+        border-top: 1px solid var(--bg-10);
+    }
+
+    .logo { display: none; }
+
+    .tabs {
+        flex: 1;
+        gap: 0;
+    }
+
+    .tab {
+        flex: 1;
+        flex-direction: column;
+        gap: 3px;
+        height: var(--nav-h);
+        justify-content: center;
+        padding: 0;
+        border-radius: 0;
+        background: none;
+    }
+
+    .tab:hover, .tab.active { background: none; }
+
+    .label {
+        font-size: 0.68rem;
+        font-weight: 550;
+        letter-spacing: 0.01em;
+    }
+}

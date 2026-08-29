@@ -1,29 +1,34 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiFeedback, apiProteinTypes, apiRecipes } from "../../lib/api"
+import type { RecipeFull } from "../../lib/types"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
 import { useToast } from "../../context/ToastContext"
+import { setFeedback, clearFeedback, useAppState } from "../../store"
+import { useLibrary, useProteinTypes } from "../../data/library"
+import { useIndex, useSignals } from "../../data/taste"
+import { rank } from "../../engine"
+import Icon from "../../components/Icon"
 import GenerateModal from "../../components/GenerateModal"
 import DayPickerModal from "../../components/DayPickerModal"
 import s from "./RecipeBrowse.module.css"
 
 const UNDO_SECONDS = 5
+const PAGE = 48
 
-// thresholds match the backend; the label states the number so it's obvious
-// what you're actually filtering on
-const NUTRITION = [
-    { key: "light", label: "under 500 kcal" },
-    { key: "high_protein", label: "35g+ protein" },
-    { key: "low_carb", label: "low carb ≤20g" },
-    { key: "low_sugar", label: "low sugar ≤5g" },
+// thresholds match what the app has always used; the label states the number so
+// it's obvious what you're actually filtering on
+const NUTRITION: { key: string; label: string; test: (r: RecipeFull) => boolean }[] = [
+    { key: "light", label: "under 500 kcal", test: r => r.calories != null && r.calories < 500 },
+    { key: "high_protein", label: "35g+ protein", test: r => r.protein_g != null && r.protein_g >= 35 },
+    { key: "low_carb", label: "low carb ≤20g", test: r => r.carbs_g != null && r.carbs_g <= 20 },
+    { key: "low_sugar", label: "low sugar ≤5g", test: r => r.sugar_g != null && r.sugar_g <= 5 },
 ]
 
-const STATUS = [
-    { key: "liked", label: "♥ liked" },
-    { key: "ai", label: "✨ AI-made" },
-    { key: "custom", label: "custom" },
-    { key: "hidden", label: "🚫 hidden" },
+const STATUS: { key: string; label: string; test: (r: RecipeFull) => boolean }[] = [
+    { key: "liked", label: "liked", test: r => r.verdict === "like" },
+    { key: "ai", label: "AI-made", test: r => r.source === "ai" },
+    { key: "custom", label: "custom", test: r => r.source === "custom" },
+    { key: "hidden", label: "hidden", test: r => r.verdict === "hidden" },
 ]
 
 function RecipeBrowse() {
@@ -31,190 +36,215 @@ function RecipeBrowse() {
     const [protein, setProtein] = useState("")
     const [nutrition, setNutrition] = useState("")
     const [status, setStatus] = useState("")
+    const [showFilters, setShowFilters] = useState(false)
+    const [shown, setShown] = useState(PAGE)
     const [showGenerate, setShowGenerate] = useState(false)
     const [planning, setPlanning] = useState<{ id: number; title: string } | null>(null)
-    const showHidden = status === "hidden"
-    // recipes mid-countdown: id -> seconds left
+    // recipes mid-countdown: id -> when the undo window closes
     const [pending, setPending] = useState<Record<number, number>>({})
-    const timers = useRef<Record<number, number>>({})
     const { showToast } = useToast()
-    const queryClient = useQueryClient()
 
-    const { data: recipes, isLoading } = useQuery({
-        queryKey: ["recipes", q, protein, nutrition, status],
-        queryFn: () =>
-            apiRecipes({
-                q: q || undefined,
-                protein_type: protein || undefined,
-                nutrition: nutrition || undefined,
-                status: status || undefined,
-            }),
-        placeholderData: keepPreviousData,
-    })
-    const { data: proteins } = useQuery({ queryKey: ["protein-types"], queryFn: apiProteinTypes })
+    const library = useLibrary()
+    const proteins = useProteinTypes()
+    const index = useIndex()
+    const signals = useSignals()
+    useAppState() // re-render when a hide or undo lands
 
+    const showHidden = status === "hidden"
+    const activeCount = [protein, nutrition, status].filter(Boolean).length
+
+    // Ordering by what the engine thinks of each recipe, rather than
+    // alphabetically — an A-to-Z library opens on condiments and side salads,
+    // which is a poor answer to "what should I cook".
+    const scores = useMemo(
+        () => new Map(rank(index, signals).map(r => [r.recipe.id, r.score])),
+        [index, signals]
+    )
+
+    const hasSignal = Object.keys(signals.feedback).length > 0
+        || signals.prefs.length > 0
+        || Object.keys(signals.plan).length > 0
+
+    /**
+     * Before anything is known about you every recipe scores the same, and the
+     * title tiebreak puts three sauces beginning with "A" on the opening
+     * screen. Dealing round-robin across proteins gives a varied first
+     * impression instead — the same trick the cold-start swipe deck uses. It
+     * only reorders; nothing is filtered out.
+     */
+    const coldStartRank = useMemo(() => {
+        if (hasSignal) return null
+        const byProtein = new Map<string, number[]>()
+        for (const r of [...library].sort((a, b) => a.title.localeCompare(b.title))) {
+            const key = r.protein_type ?? ""
+            const bucket = byProtein.get(key)
+            if (bucket) bucket.push(r.id)
+            else byProtein.set(key, [r.id])
+        }
+        const order = new Map<number, number>()
+        const queues = [...byProtein.values()]
+        let position = 0
+        for (let round = 0; queues.some(q => q.length > round); round++) {
+            for (const queue of queues) {
+                if (round < queue.length) order.set(queue[round], position++)
+            }
+        }
+        return order
+    }, [library, hasSignal])
+
+    const results = useMemo(() => {
+        const needle = q.trim().toLowerCase()
+        const nutritionTest = NUTRITION.find(n => n.key === nutrition)?.test
+        const statusTest = STATUS.find(st => st.key === status)?.test
+
+        return library
+            .filter(r => {
+                // hidden recipes stay out of the library until asked for by name
+                if (showHidden ? r.verdict !== "hidden" : r.verdict === "hidden") return false
+                if (needle && !r.title.toLowerCase().includes(needle)) return false
+                if (protein && r.protein_type !== protein) return false
+                if (nutritionTest && !nutritionTest(r)) return false
+                if (statusTest && !statusTest(r)) return false
+                return true
+            })
+            .sort((a, b) => {
+                if (coldStartRank) {
+                    return (coldStartRank.get(a.id) ?? Infinity) - (coldStartRank.get(b.id) ?? Infinity)
+                }
+                return (scores.get(b.id) ?? -Infinity) - (scores.get(a.id) ?? -Infinity)
+                    || a.title.localeCompare(b.title)
+            })
+    }, [library, q, protein, nutrition, status, showHidden, scores, coldStartRank])
+
+    useEffect(() => setShown(PAGE), [q, protein, nutrition, status])
+
+    // top up as the last row comes into view rather than laying out all 500+
+    // cards, which is what made the library crawl on a phone
+    const sentinel = useRef<HTMLDivElement>(null)
     useEffect(() => {
-        const saved = timers.current
-        return () => Object.values(saved).forEach(t => window.clearInterval(t))
-    }, [])
+        const node = sentinel.current
+        if (!node) return
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) setShown(n => n + PAGE)
+        }, { rootMargin: "600px" })
+        observer.observe(node)
+        return () => observer.disconnect()
+    }, [results.length])
 
-    const settle = (id: number) => {
-        window.clearInterval(timers.current[id])
-        delete timers.current[id]
+    // One timer for all countdowns, and the updater only ever prunes expired
+    // entries — bookkeeping inside a state updater is unsafe, since React may
+    // run it more than once.
+    useEffect(() => {
+        if (Object.keys(pending).length === 0) return
+        const timer = window.setInterval(() => {
+            setPending(p => {
+                const now = Date.now()
+                const live = Object.fromEntries(
+                    Object.entries(p).filter(([, deadline]) => deadline > now)
+                )
+                // a fresh object even when nothing expired, so the seconds tick
+                return Object.keys(live).length === Object.keys(p).length ? { ...p } : live
+            })
+        }, 250)
+        return () => window.clearInterval(timer)
+    }, [pending])
+
+    const hide = (id: number) => {
+        // write immediately so the hide sticks even if they navigate away;
+        // the countdown is the grace period to take it back
+        setFeedback(id, "hidden")
+        setPending(p => ({ ...p, [id]: Date.now() + UNDO_SECONDS * 1000 }))
+    }
+
+    const undo = (id: number) => {
         setPending(p => {
             const next = { ...p }
             delete next[id]
             return next
         })
+        clearFeedback(id)
+        showToast("Back in the library")
     }
 
-    const refreshTaste = () => {
-        queryClient.invalidateQueries({ queryKey: ["recipes"] })
-        queryClient.invalidateQueries({ queryKey: ["recommendations"] })
-        queryClient.invalidateQueries({ queryKey: ["deck"] })
-        queryClient.invalidateQueries({ queryKey: ["profile"] })
-    }
-
-    const hide = async (id: number) => {
-        // write immediately so the hide sticks even if they navigate away;
-        // the countdown is the grace period to take it back
-        try {
-            await apiFeedback(id, "hidden")
-        } catch (e) {
-            showToast((e as Error).message, "error")
-            return
-        }
-        setPending(p => ({ ...p, [id]: UNDO_SECONDS }))
-        timers.current[id] = window.setInterval(() => {
-            setPending(p => {
-                const left = (p[id] ?? 1) - 1
-                if (left <= 0) {
-                    window.clearInterval(timers.current[id])
-                    delete timers.current[id]
-                    const next = { ...p }
-                    delete next[id]
-                    refreshTaste()
-                    return next
-                }
-                return { ...p, [id]: left }
-            })
-        }, 1000)
-    }
-
-    const undo = async (id: number) => {
-        settle(id)
-        try {
-            await apiFeedback(id, "clear")
-            refreshTaste()
-            showToast("Back in the library")
-        } catch (e) {
-            showToast((e as Error).message, "error")
-        }
-    }
-
-    const unhide = async (id: number) => {
-        try {
-            await apiFeedback(id, "clear")
-            refreshTaste()
-            showToast("Unhidden")
-        } catch (e) {
-            showToast((e as Error).message, "error")
-        }
-    }
+    const clearFilters = () => { setProtein(""); setNutrition(""); setStatus("") }
 
     return (
         <div className="page">
-            <div className={s.header}>
+            <div className="page-head">
                 <h1>{showHidden ? "Hidden recipes" : "Recipe library"}</h1>
                 <button className="btn primary" onClick={() => setShowGenerate(true)}>
-                    ✨ Generate new
+                    <Icon name="sparkle" size={16} />
+                    Generate new
                 </button>
             </div>
 
-            <div className={s.filters}>
-                <input
-                    className={`field ${s.search}`}
-                    value={q}
-                    onChange={e => setQ(e.target.value)}
-                    placeholder="Search recipes…"
-                    aria-label="search recipes"
-                />
-                {(protein || nutrition || status) && (
-                    <button
-                        className={s.clearAll}
-                        onClick={() => { setProtein(""); setNutrition(""); setStatus("") }}
-                    >
-                        clear filters
-                    </button>
-                )}
-
-                <div className={s.filterGroup}>
-                    <span className={s.groupLabel}>Protein</span>
-                    <div className={s.chips}>
-                        {(proteins ?? []).map(p => (
-                            <button
-                                key={p}
-                                className={`${s.chipBtn} ${protein === p ? s.chipActive : ""}`}
-                                onClick={() => setProtein(protein === p ? "" : p)}
-                            >
-                                {p}
-                            </button>
-                        ))}
-                    </div>
+            <div className={s.toolbar}>
+                <div className={s.searchWrap}>
+                    <Icon name="search" size={17} className={s.searchIcon} />
+                    <input
+                        className={`field ${s.search}`}
+                        value={q}
+                        onChange={e => setQ(e.target.value)}
+                        placeholder="Search recipes…"
+                        aria-label="search recipes"
+                    />
+                    {q && (
+                        <button className={s.searchClear} onClick={() => setQ("")} aria-label="clear search">
+                            <Icon name="close" size={15} />
+                        </button>
+                    )}
                 </div>
-
-                <div className={s.filterGroup}>
-                    <span className={s.groupLabel}>Nutrition</span>
-                    <div className={s.chips}>
-                        {NUTRITION.map(n => (
-                            <button
-                                key={n.key}
-                                className={`${s.chipBtn} ${nutrition === n.key ? s.chipActive : ""}`}
-                                onClick={() => setNutrition(nutrition === n.key ? "" : n.key)}
-                            >
-                                {n.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className={s.filterGroup}>
-                    <span className={s.groupLabel}>Status</span>
-                    <div className={s.chips}>
-                        {STATUS.map(st => (
-                            <button
-                                key={st.key}
-                                className={`${s.chipBtn} ${status === st.key ? s.chipActive : ""}`}
-                                onClick={() => setStatus(status === st.key ? "" : st.key)}
-                            >
-                                {st.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <button
+                    className={`btn ${activeCount ? s.filterOn : ""}`}
+                    onClick={() => setShowFilters(f => !f)}
+                    aria-expanded={showFilters}
+                >
+                    <Icon name="filter" size={15} />
+                    Filters
+                    {activeCount > 0 && <span className={s.badge}>{activeCount}</span>}
+                </button>
             </div>
 
-            {recipes && recipes.length === 0 && !isLoading && (
-                <p className={s.emptyNote}>
+            {showFilters && (
+                <div className={s.filters}>
+                    <Group label="Protein" options={proteins.map(p => ({ key: p, label: p }))}
+                        value={protein} onChange={setProtein} />
+                    <Group label="Nutrition" options={NUTRITION}
+                        value={nutrition} onChange={setNutrition} />
+                    <Group label="Status" options={STATUS}
+                        value={status} onChange={setStatus} />
+                    {activeCount > 0 && (
+                        <button className="btn ghost" onClick={clearFilters}>Clear all</button>
+                    )}
+                </div>
+            )}
+
+            <p className={s.count}>
+                {results.length} {results.length === 1 ? "recipe" : "recipes"}
+                {!showHidden && !q && !activeCount && hasSignal && " · best matches first"}
+            </p>
+
+            {results.length === 0 && (
+                <p className={s.empty}>
                     {showHidden ? "Nothing hidden yet." : "Nothing matches — try a different search."}
                 </p>
             )}
 
             <div className={s.grid}>
-                {(recipes ?? []).map(r => {
-                    const secondsLeft = pending[r.id]
-                    if (secondsLeft !== undefined) {
+                {results.slice(0, shown).map(r => {
+                    const deadline = pending[r.id]
+                    const secondsLeft = deadline && Math.ceil((deadline - Date.now()) / 1000)
+                    if (secondsLeft && secondsLeft > 0) {
                         return (
                             <div key={r.id} className={`${s.card} ${s.hiddenCard}`}>
-                                <div className={s.hiddenInner}>
-                                    <div className={s.hiddenIcon}>🚫</div>
-                                    <div className={s.hiddenText}>
-                                        <strong>{r.title}</strong> was hidden
-                                    </div>
-                                    <button className="btn" onClick={() => undo(r.id)}>
-                                        Undo ({secondsLeft})
-                                    </button>
+                                <Icon name="ban" size={26} />
+                                <div className={s.hiddenText}>
+                                    <strong>{r.title}</strong> was hidden
                                 </div>
+                                <button className="btn" onClick={() => undo(r.id)}>
+                                    <Icon name="undo" size={15} />
+                                    Undo ({secondsLeft})
+                                </button>
                             </div>
                         )
                     }
@@ -234,14 +264,16 @@ function RecipeBrowse() {
                                     />
                                 ) : (
                                     <div className={`${s.img} ${s.imgPlaceholder}`}>
-                                        {r.source === "ai" ? "✨" : "🍽"}
+                                        <Icon name={r.source === "ai" ? "sparkle" : "plate"} size={28} />
                                     </div>
                                 )}
+                                {r.verdict === "like" && (
+                                    <span className={s.liked} title="you liked this">
+                                        <Icon name="heart" size={13} filled />
+                                    </span>
+                                )}
                                 <div className={s.cardBody}>
-                                    <div className={s.cardTitle}>
-                                        {r.shortlisted && <span title="you liked this">♥ </span>}
-                                        {r.title}
-                                    </div>
+                                    <div className={s.cardTitle}>{r.title}</div>
                                     <div className={s.cardMeta}>
                                         {r.protein_type}
                                         {r.prep_time_minutes != null && <> · {r.prep_time_minutes} min</>}
@@ -253,10 +285,11 @@ function RecipeBrowse() {
                                 {showHidden ? (
                                     <button
                                         className={s.cardBtn}
-                                        onClick={() => unhide(r.id)}
+                                        onClick={() => { clearFeedback(r.id); showToast("Unhidden") }}
                                         data-tip="Put it back in the library"
                                     >
-                                        ↺ Unhide
+                                        <Icon name="undo" size={15} />
+                                        Unhide
                                     </button>
                                 ) : (
                                     <>
@@ -265,15 +298,16 @@ function RecipeBrowse() {
                                             onClick={() => setPlanning({ id: r.id, title: r.title })}
                                             data-tip="Add to a day on your plan"
                                         >
-                                            + Plan this
+                                            <Icon name="plus" size={15} />
+                                            Plan this
                                         </button>
                                         <button
-                                            className={s.cardBtn}
+                                            className={`${s.cardBtn} ${s.iconOnly}`}
                                             onClick={() => hide(r.id)}
                                             aria-label="hide this recipe"
                                             data-tip="Never show me this"
                                         >
-                                            🚫
+                                            <Icon name="ban" size={15} />
                                         </button>
                                     </>
                                 )}
@@ -283,6 +317,8 @@ function RecipeBrowse() {
                 })}
             </div>
 
+            {shown < results.length && <div ref={sentinel} className={s.sentinel} />}
+
             {showGenerate && <GenerateModal onClose={() => setShowGenerate(false)} />}
             {planning && (
                 <DayPickerModal
@@ -291,6 +327,30 @@ function RecipeBrowse() {
                     onClose={() => setPlanning(null)}
                 />
             )}
+        </div>
+    )
+}
+
+function Group({ label, options, value, onChange }: {
+    label: string
+    options: { key: string; label: string }[]
+    value: string
+    onChange: (next: string) => void
+}) {
+    return (
+        <div className={s.group}>
+            <span className={s.groupLabel}>{label}</span>
+            <div className={s.chips}>
+                {options.map(o => (
+                    <button
+                        key={o.key}
+                        className={`${s.chip} ${value === o.key ? s.chipActive : ""}`}
+                        onClick={() => onChange(value === o.key ? "" : o.key)}
+                    >
+                        {o.label}
+                    </button>
+                ))}
+            </div>
         </div>
     )
 }

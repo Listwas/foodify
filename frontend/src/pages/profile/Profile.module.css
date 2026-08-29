@@ -1,36 +1,34 @@
-.title {
-    margin: 0 0 4px;
-    font-size: 1.5rem;
-    letter-spacing: -0.02em;
-}
-
 .blurb {
     color: var(--text-dim);
     font-size: 0.88rem;
-    margin: 0 0 20px;
+    margin: var(--s1) 0 var(--s5);
     max-width: 56ch;
 }
 
 .columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: var(--s4);
 }
 
-.panel {
+.panel, .learned, .settings {
     background: var(--bg-5);
     border: 1px solid var(--bg-10);
-    border-radius: 12px;
-    padding: 14px 16px 16px;
+    border-radius: var(--r2);
+    padding: var(--s4);
 }
 
 .panel h2,
-.learned h2 {
-    font-size: 0.85rem;
+.learned h2,
+.settings h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     color: var(--text-dim);
-    margin: 0 0 12px;
+    margin: 0 0 var(--s3);
 }
 
 .addRow {
@@ -106,13 +104,49 @@
     font-size: 0.84rem;
 }
 
-.learned {
-    margin-top: 22px;
-    background: var(--bg-5);
-    border: 1px solid var(--bg-10);
-    border-radius: 12px;
-    padding: 14px 16px 18px;
+.learned, .settings { margin-top: var(--s4); }
+
+/* --- settings --------------------------------------------------------- */
+
+.settingRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s4);
+    padding: var(--s3) 0;
+    border-top: 1px solid var(--bg-10);
+    flex-wrap: wrap;
 }
+
+.settingName {
+    font-size: 0.9rem;
+    font-weight: 550;
+}
+
+.settingNote {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin-top: 2px;
+    max-width: 52ch;
+}
+
+.settingActions {
+    display: flex;
+    gap: var(--s2);
+    flex: none;
+}
+
+.credit {
+    margin: var(--s4) 0 0;
+    padding-top: var(--s3);
+    border-top: 1px solid var(--bg-10);
+    color: var(--text-dim);
+    font-size: 0.78rem;
+}
+
+.credit a { color: var(--text-dim); }
+.credit a:hover { color: var(--accent); }
 
 /* even columns so the numbers line up instead of drifting with label width */
 .stats {

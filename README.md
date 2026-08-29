@@ -1,20 +1,21 @@
 # foodify
 
-meal planning for one household. weekly dinner calendar, quick "surprise me" swaps, a recipe library seeded from [TheMealDB](https://www.themealdb.com), AI-estimated macros, AI recipe generation, and a per-meal grocery checklist. python/fastapi backend + react frontend, sqlite, no accounts.
+meal planning for one household. weekly dinner calendar, quick "surprise me" swaps, a 511-recipe library seeded from [TheMealDB](https://www.themealdb.com) with AI-estimated macros, tinder-style recipe discovery that learns what you like, and a per-meal grocery checklist.
 
 built to answer "what's for dinner" without cooking the same three chicken dishes forever.
 
+**it is a static site.** no server, no database, no account. the recipe library is a file, the taste engine runs in your browser, and your plan lives in that browser's storage. it installs to a phone home screen and works offline.
+
 ## what it does
 
-- **plan view**: an agenda of the week — each day a row with its photo, macros and buttons for *mark cooked*, *swap* and *clear* — or a month calendar when you want the wider view
-- **discover**: swipe through recipes tinder-style. Every swipe trains a taste model that reorders suggestions everywhere else in the app. Undo puts back the exact card you just swiped
+- **plan**: an agenda of the week — each day a row with its photo, macros, a cooked tick and the rest of the actions one tap away — or a month calendar for the wider view
+- **discover**: swipe through recipes. Every swipe trains a taste model that reorders suggestions everywhere else. Undo puts back the exact card you just swiped
 - **swipe history**: everything you've ever swiped, with the date and your verdict, all changeable. Nothing is a one-way door — recipes you passed on quietly return to the deck after a few months
 - **suggest/swap**: ranked by what it's learned about you, filtered by protein or max cooking time, with liked recipes offered first
-- **generate something new**: describe protein/time/mood, the AI proposes a recipe, keep it or toss it
-- **recipe library**: ~510 recipes seeded from TheMealDB across ten dinner categories (chicken, beef, pork, lamb, goat, seafood, pasta, vegetarian, vegan, misc), filterable by protein, nutrition (under 500 kcal, 35g+ protein, low carb, low sugar) and status (liked, AI-made, custom, hidden). *Plan this* puts any recipe straight onto a day. Hide anything you never want to see, with 5 seconds to undo
+- **generate something new**: describe protein/time/mood and the AI proposes a recipe (needs a key, see below)
+- **recipe library**: 511 recipes across ten dinner categories, filterable by protein, nutrition (under 500 kcal, 35g+ protein, low carb, low sugar) and status (liked, AI-made, custom, hidden). *Plan this* puts any recipe straight onto a day. Hide anything you never want to see, with 5 seconds to undo
 - **photos**: generated recipes borrow an openly-licensed photo of a similar dish — clearly badged as stock, credited, and rerollable. You can upload your own photo for any recipe, seeded ones included
-- **taste profile**: tell it ingredients you like or avoid (allergies can be hard-filtered), and see what it has worked out on its own
-- **macros**: AI-estimated calories/protein/carbs/sugar per recipe (needs the free key below)
+- **taste profile**: tell it ingredients you like or avoid, and see what it has worked out on its own
 - **grocery checklist**: open a day, tick off that meal's ingredients, state persists
 
 ## how the recommendations work
@@ -33,84 +34,81 @@ says a lot. Inverse document frequency handles that weighting automatically.
 Every suggestion says why it was picked ("you like curry powder + garam masala"). Pantry
 staples never appear in those explanations — "you like water" is true of everyone.
 
-Photos for AI-generated recipes come from [Openverse](https://openverse.org) (openly
-licensed, no API key). They're always labelled as a photo of a *similar* dish rather than
-the real thing, and the CC attribution is shown alongside.
+The engine lives in [`frontend/src/engine`](frontend/src/engine). It was originally
+Python on the server; the port is pinned to that implementation's output by
+[`parity.test.ts`](frontend/src/engine/parity.test.ts), which checks all 497 rankable
+recipes score identically.
 
-## setup
+## run it
 
 ```sh
-# backend
-cd backend
-python -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python seed.py        # fills the library from TheMealDB
-
-# frontend
-cd ../frontend
+cd frontend
 npm install
-npm run build
+npm run dev        # http://localhost:5173
 ```
-
-### AI features (free)
-
-Grab a free key at [aistudio.google.com](https://aistudio.google.com) (no card needed), then:
 
 ```sh
-cp backend/.env.example backend/.env   # paste the key into GEMINI_API_KEY
-cd backend && .venv/bin/python seed.py # re-run to backfill macros (~20 min, free-tier rate limits)
+npm run build      # static site in frontend/dist
+npm test           # taste-engine tests
 ```
 
-Without the key everything still works — recipes just show no macros and "generate" politely refuses.
+## deploy it
 
-The free tier has a daily request cap. If the backfill stops partway, it's just out of
-quota for the day: re-run `seed.py` tomorrow and it picks up exactly where it left off.
-When the main model's allowance is spent the app automatically continues on a lighter
-one (`FOODIFY_FALLBACK_MODELS`).
+Cloudflare Pages, free tier:
 
-## running it
+| setting | value |
+|---|---|
+| build command | `cd frontend && npm install && npm run build` |
+| build output directory | `frontend/dist` |
+| root directory | *(repo root)* |
+
+That's the whole deployment. `frontend/public/_redirects` keeps deep links working,
+and the service worker precaches the app and the recipe library so it runs offline.
+
+### AI recipe generation (optional, free)
+
+Everything works without this — only the *Generate* button needs it, and it says so
+plainly when the key is absent.
+
+A key can't ship inside a public web app, so generation goes through one Cloudflare
+Pages Function ([`functions/api/generate.ts`](functions/api/generate.ts)). Grab a free
+key at [aistudio.google.com](https://aistudio.google.com) (no card needed) and:
 
 ```sh
-cd backend
-.venv/bin/uvicorn main:server --host 0.0.0.0 --port 8000
+npx wrangler pages secret put GEMINI_API_KEY
 ```
 
-One process serves the app and the API. On the same wifi, open `http://<this machine's LAN IP>:8000` from your phone.
+Note the URL is public: anyone who finds it could spend the free daily allowance
+(~20 requests). At that size it's a nuisance rather than a risk.
 
-### dev mode
+## your data
+
+Your plan, swipes and preferences live in your browser's IndexedDB and are never
+uploaded. Two consequences worth knowing:
+
+- **there is no sync.** Each browser and each device is its own copy.
+- **moving devices, or keeping a backup, is a file.** *Taste → Your data → Export*
+  writes a JSON file; *Import* loads it back.
+
+Coming from the old server version? [`tools/migrate_state.py`](tools/migrate_state.py)
+turns a `foodify.db` into that same backup file:
 
 ```sh
-cd backend && .venv/bin/uvicorn main:app --port 8000    # api with hot /docs
-cd frontend && npm run dev                              # vite on :5173, /api proxied
+python tools/migrate_state.py path/to/foodify.db
 ```
 
-## Windows: pobierz i kliknij
+## maintaining the recipe library
 
-1. **Code → Download ZIP** z tej strony
-2. rozpakuj gdzieś na stałe (nie do Pobranych)
-3. dwuklik na **`INSTALUJ.bat`**
-
-Instaluje Pythona i Node.js sam, buduje aplikację, wgrywa 511 przepisów
-z policzonymi makrami i robi ikonę na pulpicie. Szczegóły i rozwiązywanie
-problemów: **[deploy/windows/CZYTAJ-TO.md](deploy/windows/CZYTAJ-TO.md)**.
-
-## install it on a phone
-
-The frontend is a PWA — open it on a phone and use *Add to Home Screen*
-(iOS Safari) or *Install app* (Android Chrome). You get a home-screen icon, a
-fullscreen window and cached photos, no app store involved.
-
-To run it as an always-on service and reach it from outside the house, see
-**[DEPLOY.md](DEPLOY.md)** — a systemd unit plus Tailscale, both free.
-
-## tests
+The library is [`frontend/public/recipes.json`](frontend/public/recipes.json), 511
+recipes at ~244 KB over the wire. It only changes when you decide it should:
 
 ```sh
-cd backend && .venv/bin/python -m pytest tests/
+python -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
+.venv/bin/python tools/seed.py                  # pull new TheMealDB meals + estimate macros
+.venv/bin/python tools/seed.py --skip-nutrition # just the meals
 ```
 
-## notes
-
-- db is a single file, `backend/foodify.db` — back it up by copying it
-- `seed.py` is idempotent: run it any time to pick up missing macros or newly added TheMealDB meals
-- schema carries `user_id` everywhere it matters, so multi-user later is additive
+`seed.py` is re-runnable: existing meals are skipped and only recipes without an
+estimate get one, so it doubles as the macro backfill. Macro estimation needs the
+Gemini key in `tools/.env`; the free tier has a daily cap, and the script picks up
+where it left off if it runs out. Commit `recipes.json` afterwards to ship the change.

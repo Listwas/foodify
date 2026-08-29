@@ -1,14 +1,17 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiClearDay, apiMarkCooked, apiPlanRange } from "../../lib/api"
-import type { PlanEntry } from "../../lib/types"
+import type { RecipeFull } from "../../lib/types"
 import {
     addDays, addMonths, iso, monthGrid, monthLabel, rangeLabel,
     startOfMonth, startOfWeek, weekdayShort, WEEKDAY_HEADS,
 } from "../../lib/dates"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
 import { useToast } from "../../context/ToastContext"
+import { useAppState, clearDay, markCooked } from "../../store"
+import { planKey } from "../../store/types"
+import { useRecipeMap } from "../../data/library"
+import Icon from "../../components/Icon"
+import Menu from "../../components/Menu"
 import SuggestModal from "../../components/SuggestModal"
 import GenerateModal from "../../components/GenerateModal"
 import s from "./WeekView.module.css"
@@ -19,6 +22,12 @@ type ModalState =
     | { kind: "generate"; date: string }
     | null
 
+interface Entry {
+    date: string
+    recipe: RecipeFull
+    cooked: boolean
+}
+
 function WeekView() {
     const [mode, setMode] = useState<Mode>(
         () => (localStorage.getItem("planner-mode") as Mode) || "week"
@@ -27,7 +36,8 @@ function WeekView() {
     const [modal, setModal] = useState<ModalState>(null)
     const navigate = useNavigate()
     const { showToast } = useToast()
-    const queryClient = useQueryClient()
+    const state = useAppState()
+    const recipes = useRecipeMap()
 
     const setPlannerMode = (next: Mode) => {
         setMode(next)
@@ -44,48 +54,31 @@ function WeekView() {
         [mode, anchor.getTime()] // eslint-disable-line react-hooks/exhaustive-deps
     )
 
-    const startIso = iso(days[0])
-    const endIso = iso(days[days.length - 1])
     const todayIso = iso(new Date())
 
-    const { data: entries, isLoading } = useQuery({
-        queryKey: ["week", startIso, endIso],
-        queryFn: () => apiPlanRange(startIso, endIso),
-    })
-
-    const byDate = useMemo(() => {
-        const map: Record<string, PlanEntry> = {}
-        for (const e of entries ?? []) if (e.meal_slot === "dinner") map[e.date] = e
-        return map
-    }, [entries])
-
-    const refresh = () => {
-        queryClient.invalidateQueries({ queryKey: ["week"] })
-        queryClient.invalidateQueries({ queryKey: ["recommendations"] })
+    const entryFor = (dateIso: string): Entry | undefined => {
+        const slot = state.plan[planKey(dateIso)]
+        const recipe = slot && recipes.get(slot.recipeId)
+        if (!slot || !recipe) return undefined
+        return { date: dateIso, recipe, cooked: slot.status === "completed" }
     }
 
-    const clear = useMutation({
-        mutationFn: apiClearDay,
-        onSuccess: () => { refresh(); showToast("Day cleared") },
-        onError: (e: Error) => showToast(e.message, "error"),
-    })
+    const cook = (dateIso: string, done: boolean) => {
+        markCooked(dateIso, done)
+        showToast(done ? "Marked as cooked" : "Marked as not cooked")
+    }
 
-    const cook = useMutation({
-        mutationFn: ({ id, done }: { id: number; done: boolean }) => apiMarkCooked(id, done),
-        onSuccess: e => {
-            refresh()
-            queryClient.invalidateQueries({ queryKey: ["profile"] })
-            showToast(e.status === "completed" ? "Marked as cooked 🍳" : "Marked as not cooked")
-        },
-        onError: (e: Error) => showToast(e.message, "error"),
-    })
+    const clear = (dateIso: string) => {
+        clearDay(dateIso)
+        showToast("Day cleared")
+    }
 
-    const openFor = (dateIso: string, entry?: PlanEntry) =>
+    const openSuggest = (dateIso: string, entry?: Entry) =>
         setModal({ kind: "suggest", date: dateIso, currentRecipeId: entry?.recipe.id })
 
     return (
         <div className="page">
-            <div className={s.header}>
+            <div className="page-head">
                 <h1>Dinner plan</h1>
                 <div className={s.headerRight}>
                     <div className={s.modes} role="tablist" aria-label="calendar range">
@@ -102,13 +95,20 @@ function WeekView() {
                         ))}
                     </div>
                     <div className={s.weekNav}>
-                        <button className="btn ghost" onClick={() => setOffset(o => o - 1)} aria-label="previous" data-tip="Previous">‹</button>
-                        <button className={`btn ghost ${s.rangeBtn}`} onClick={() => setOffset(0)} data-tip="Jump to today">
+                        <button className="btn ghost icon" onClick={() => setOffset(o => o - 1)}
+                            aria-label="previous" data-tip="Previous">
+                            <Icon name="left" />
+                        </button>
+                        <button className={`btn ghost ${s.rangeBtn}`} onClick={() => setOffset(0)}
+                            data-tip="Jump to today">
                             {offset === 0
                                 ? (mode === "week" ? "This week" : "This month")
                                 : (mode === "week" ? rangeLabel(anchor) : monthLabel(anchor))}
                         </button>
-                        <button className="btn ghost" onClick={() => setOffset(o => o + 1)} aria-label="next" data-tip="Next">›</button>
+                        <button className="btn ghost icon" onClick={() => setOffset(o => o + 1)}
+                            aria-label="next" data-tip="Next">
+                            <Icon name="right" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -117,31 +117,28 @@ function WeekView() {
                 <div className={s.agenda}>
                     {days.map(day => {
                         const dateIso = iso(day)
-                        const entry = byDate[dateIso]
+                        const entry = entryFor(dateIso)
                         const isToday = dateIso === todayIso
-                        const past = dateIso < todayIso
-                        const cooked = entry?.status === "completed"
                         return (
                             <div
                                 key={dateIso}
                                 className={[
                                     s.row,
                                     isToday ? s.rowToday : "",
-                                    past ? s.rowPast : "",
-                                    cooked ? s.rowCooked : "",
+                                    dateIso < todayIso ? s.rowPast : "",
+                                    entry?.cooked ? s.rowCooked : "",
                                 ].join(" ")}
                             >
                                 <div className={s.gutter}>
                                     <span className={s.weekday}>{weekdayShort(day)}</span>
                                     <span className={s.dayNum}>{day.getDate()}</span>
-                                    {isToday && <span className={s.todayTag}>today</span>}
                                 </div>
 
                                 {entry ? (
                                     <>
                                         <button
                                             className={s.rowMain}
-                                            onClick={() => navigate(`/day/${entry.id}`)}
+                                            onClick={() => navigate(`/day/${dateIso}`)}
                                             data-tip="Open recipe & groceries"
                                             data-tip-below
                                         >
@@ -156,13 +153,12 @@ function WeekView() {
                                                     onLoad={e => e.currentTarget.setAttribute("data-loaded", "true")}
                                                 />
                                             ) : (
-                                                <div className={`${s.thumb} ${s.thumbPlaceholder}`}>🍽</div>
+                                                <div className={`${s.thumb} ${s.thumbPlaceholder}`}>
+                                                    <Icon name="plate" size={22} />
+                                                </div>
                                             )}
                                             <div className={s.rowText}>
-                                                <div className={s.rowTitle}>
-                                                    {cooked && <span className={s.cookedTick}>✓</span>}
-                                                    {entry.recipe.title}
-                                                </div>
+                                                <div className={s.rowTitle}>{entry.recipe.title}</div>
                                                 <div className={s.rowMeta}>
                                                     {entry.recipe.protein_type}
                                                     {entry.recipe.prep_time_minutes != null &&
@@ -176,37 +172,33 @@ function WeekView() {
 
                                         <div className={s.rowActions}>
                                             <button
-                                                className={`btn ${cooked ? "primary" : ""} ${s.cookBtn}`}
-                                                onClick={() => cook.mutate({ id: entry.id, done: !cooked })}
-                                                disabled={cook.isPending}
-                                                data-tip={cooked ? "Undo cooked" : "Mark as cooked"}
+                                                className={`btn icon ${s.cookBtn} ${entry.cooked ? s.cookedOn : ""}`}
+                                                onClick={() => cook(dateIso, !entry.cooked)}
+                                                aria-pressed={entry.cooked}
+                                                aria-label={entry.cooked ? "mark as not cooked" : "mark as cooked"}
+                                                data-tip={entry.cooked ? "Cooked — tap to undo" : "Mark as cooked"}
                                             >
-                                                {cooked ? "✓ Cooked" : "Mark cooked"}
+                                                <Icon name="check" />
                                             </button>
-                                            <button
-                                                className="btn"
-                                                onClick={() => openFor(dateIso, entry)}
-                                                data-tip="Swap for something else"
-                                            >
-                                                ⇄ Swap
-                                            </button>
-                                            <button
-                                                className="btn ghost"
-                                                onClick={() => clear.mutate(entry.id)}
-                                                aria-label="clear day"
-                                                data-tip="Clear this day"
-                                            >
-                                                ✕
-                                            </button>
+                                            <Menu items={[
+                                                {
+                                                    label: "Swap meal",
+                                                    icon: "swap",
+                                                    onSelect: () => openSuggest(dateIso, entry),
+                                                },
+                                                {
+                                                    label: "Clear day",
+                                                    icon: "close",
+                                                    danger: true,
+                                                    onSelect: () => clear(dateIso),
+                                                },
+                                            ]} />
                                         </div>
                                     </>
                                 ) : (
-                                    <button
-                                        className={s.rowEmpty}
-                                        onClick={() => openFor(dateIso)}
-                                        disabled={isLoading}
-                                    >
-                                        + Plan something
+                                    <button className={s.rowEmpty} onClick={() => openSuggest(dateIso)}>
+                                        <Icon name="plus" size={16} />
+                                        Plan something
                                     </button>
                                 )}
                             </div>
@@ -221,20 +213,18 @@ function WeekView() {
                     <div className={s.monthGrid}>
                         {days.map(day => {
                             const dateIso = iso(day)
-                            const entry = byDate[dateIso]
-                            const isToday = dateIso === todayIso
-                            const outside = day.getMonth() !== anchor.getMonth()
+                            const entry = entryFor(dateIso)
                             return (
                                 <button
                                     key={dateIso}
                                     className={[
                                         s.cell,
-                                        isToday ? s.cellToday : "",
-                                        outside ? s.cellOutside : "",
+                                        dateIso === todayIso ? s.cellToday : "",
+                                        day.getMonth() !== anchor.getMonth() ? s.cellOutside : "",
                                         entry ? s.cellFilled : "",
                                     ].join(" ")}
                                     onClick={() =>
-                                        entry ? navigate(`/day/${entry.id}`) : openFor(dateIso)
+                                        entry ? navigate(`/day/${dateIso}`) : openSuggest(dateIso)
                                     }
                                     title={entry ? entry.recipe.title : "plan something"}
                                 >
@@ -251,13 +241,15 @@ function WeekView() {
                                                     loading="lazy"
                                                 />
                                             )}
-                                            <span className={s.chipText}>
-                                                {entry.status === "completed" && "✓ "}
-                                                {entry.recipe.title}
-                                            </span>
+                                            <span className={s.chipText}>{entry.recipe.title}</span>
+                                            {entry.cooked && (
+                                                <Icon name="check" size={13} className={s.chipTick} />
+                                            )}
                                         </span>
                                     ) : (
-                                        <span className={s.cellAdd}>+</span>
+                                        <span className={s.cellAdd}>
+                                            <Icon name="plus" size={15} />
+                                        </span>
                                     )}
                                 </button>
                             )

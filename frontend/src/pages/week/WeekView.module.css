@@ -1,44 +1,32 @@
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 18px;
-}
-.header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    letter-spacing: -0.02em;
-}
-
 .headerRight {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--s3);
     flex-wrap: wrap;
 }
 
 .modes {
     display: flex;
-    background: var(--bg-5);
-    border: 1px solid var(--bg-20);
-    border-radius: 999px;
     padding: 2px;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: var(--r1);
 }
+
 .modeBtn {
+    border: 0;
     background: none;
-    border: none;
     color: var(--text-dim);
-    padding: 5px 14px;
-    border-radius: 999px;
-    font-size: 0.84rem;
+    padding: 6px 13px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 550;
     cursor: pointer;
 }
+
 .modeActive {
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-weight: 600;
+    background: var(--bg-20);
+    color: var(--text);
 }
 
 .weekNav {
@@ -46,257 +34,272 @@
     align-items: center;
     gap: 2px;
 }
-.rangeBtn { min-width: 120px; }
 
-/* ---- agenda (week) ----
-   Seven narrow columns left no room for anything; a row per day gives each
-   meal a real photo, its macros, and buttons that say what they do. */
+.rangeBtn {
+    min-width: 116px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- week: an agenda of full-width days ------------------------------- */
 
 .agenda {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: var(--s2);
 }
 
 .row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--s3);
+    padding: var(--s2) var(--s3);
     background: var(--bg-5);
-    border: 1px solid var(--bg-10);
-    border-radius: 12px;
-    padding: 10px 12px;
-    min-height: 92px;
-    transition: border-color 0.12s ease;
+    border: 1px solid transparent;
+    border-radius: var(--r2);
+    min-height: 74px;
 }
+
 .rowToday {
     border-color: var(--accent);
-    background: linear-gradient(90deg, var(--accent-soft), var(--bg-5) 40%);
+    background: var(--accent-soft);
 }
+
 .rowPast { opacity: 0.62; }
-.rowPast:hover { opacity: 1; }
-.rowCooked { border-left: 3px solid hsl(145, 60%, 45%); }
+.rowCooked .rowTitle { color: var(--text-dim); }
 
 .gutter {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 46px;
-    flex-shrink: 0;
-    gap: 1px;
+    width: 42px;
+    flex: none;
 }
+
 .weekday {
-    font-size: 0.68rem;
-    text-transform: uppercase;
+    font-size: 0.66rem;
+    font-weight: 600;
     letter-spacing: 0.07em;
+    text-transform: uppercase;
     color: var(--text-dim);
 }
+
 .dayNum {
-    font-weight: 700;
-    font-size: 1.25rem;
-    line-height: 1.1;
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
 }
-.rowToday .dayNum { color: var(--accent); }
-.todayTag {
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--accent);
-    font-weight: 700;
-}
+
+.rowToday .dayNum, .rowToday .weekday { color: var(--accent); }
 
 .rowMain {
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: var(--s3);
     flex: 1;
     min-width: 0;
-    background: none;
-    border: none;
     padding: 0;
-    font: inherit;
+    border: 0;
+    background: none;
     color: inherit;
     text-align: left;
     cursor: pointer;
 }
-.rowMain:hover .rowTitle { color: var(--accent); }
 
 .thumb {
-    width: 64px;
-    height: 64px;
+    width: 54px;
+    height: auto;
     aspect-ratio: 1 / 1;
+    flex: none;
     object-fit: cover;
-    border-radius: 9px;
-    flex-shrink: 0;
-}
-.thumbPlaceholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    background: var(--bg-10);
+    border-radius: var(--r1);
 }
 
-.rowText { min-width: 0; flex: 1; }
+.thumbPlaceholder {
+    display: grid;
+    place-items: center;
+    background: var(--bg-10);
+    color: var(--text-dim);
+}
+
+.rowText {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
 .rowTitle {
-    font-weight: 600;
-    font-size: 0.94rem;
-    line-height: 1.28;
-    transition: color 0.12s ease;
+    font-size: 0.95rem;
+    font-weight: 550;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
 }
-.cookedTick { color: hsl(145, 60%, 45%); margin-right: 3px; }
+
 .rowMeta {
+    font-size: 0.8rem;
     color: var(--text-dim);
-    font-size: 0.77rem;
     text-transform: capitalize;
-    margin: 2px 0 1px;
 }
 
 .rowActions {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex-shrink: 0;
+    align-items: center;
+    gap: var(--s1);
+    flex: none;
 }
-.rowActions .btn {
-    padding: 5px 10px;
-    font-size: 0.76rem;
-    white-space: nowrap;
+
+.cookBtn {
+    color: var(--text-dim);
+    background: transparent;
+    border-color: transparent;
 }
-.cookBtn { min-width: 104px; }
+
+.cookBtn:hover {
+    background: var(--bg-10);
+    color: var(--text);
+}
+
+.cookedOn {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+}
+
+.cookedOn:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+    filter: brightness(1.08);
+}
 
 .rowEmpty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s2);
     flex: 1;
     align-self: stretch;
-    border: 1.5px dashed var(--bg-20);
-    border-radius: 9px;
+    min-height: 56px;
+    border: 1px dashed var(--bg-20);
+    border-radius: var(--r1);
     background: none;
     color: var(--text-dim);
-    font-size: 0.88rem;
+    font-size: 0.875rem;
     cursor: pointer;
-    transition: color 0.12s ease, border-color 0.12s ease;
-}
-.rowEmpty:hover { color: var(--accent); border-color: var(--accent); }
-
-@media (max-width: 900px) {
-    .agenda { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 560px) {
-    .row { flex-wrap: wrap; padding: 10px; gap: 10px; }
-    .gutter {
-        flex-direction: row;
-        width: auto;
-        gap: 7px;
-        align-items: baseline;
-    }
-    .dayNum { font-size: 1rem; }
-    .todayTag { margin-left: 2px; }
-    .rowMain { flex-basis: 100%; order: 2; }
-    .rowActions {
-        order: 3;
-        flex-direction: row;
-        flex-basis: 100%;
-    }
-    .rowActions .btn { flex: 1; }
-    .cookBtn { min-width: 0; }
-    .rowEmpty { flex-basis: 100%; padding: 14px 0; }
+.rowEmpty:hover {
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
-/* ---- month view ---- */
+/* --- month grid ------------------------------------------------------- */
+
+.month {
+    display: grid;
+    gap: var(--s2);
+}
 
 .monthHead {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-bottom: 6px;
-}
-.monthHead div {
-    text-align: center;
-    font-size: 0.72rem;
+    gap: var(--s1);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
     color: var(--text-dim);
+    text-align: center;
 }
 
 .monthGrid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
+    gap: var(--s1);
 }
 
 .cell {
-    background: var(--bg-5);
-    border: 1px solid var(--bg-10);
-    border-radius: 10px;
-    min-height: 92px;
-    padding: 6px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 4px;
-    cursor: pointer;
-    text-align: left;
+    gap: var(--s1);
+    min-height: 84px;
+    padding: 6px;
+    background: var(--bg-5);
+    border: 1px solid transparent;
+    border-radius: var(--r1);
     color: inherit;
-    font: inherit;
+    text-align: left;
+    cursor: pointer;
     overflow: hidden;
 }
-.cell:hover { border-color: var(--accent); }
+
+.cell:hover { border-color: var(--bg-30); }
 .cellToday { border-color: var(--accent); }
 .cellOutside { opacity: 0.4; }
 .cellFilled { background: var(--bg-10); }
 
 .cellNum {
-    font-size: 0.75rem;
-    color: var(--text-dim);
+    font-size: 0.72rem;
     font-weight: 600;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
 }
+
 .cellToday .cellNum { color: var(--accent); }
 
 .chip {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    flex: 1;
-    min-height: 0;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
 }
+
 .chipImg {
-    width: 100%;
-    height: 34px;
+    width: 20px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    flex: none;
     object-fit: cover;
-    border-radius: 5px;
+    border-radius: 4px;
 }
+
 .chipText {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     line-height: 1.25;
+    overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
+}
+
+.chipTick {
+    flex: none;
+    color: var(--accent);
 }
 
 .cellAdd {
+    display: grid;
+    place-items: center;
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--bg-30);
-    font-size: 1.1rem;
 }
+
 .cell:hover .cellAdd { color: var(--accent); }
 
-@media (max-width: 620px) {
-    .monthGrid { gap: 3px; }
-    .monthHead { gap: 3px; }
-    .cell { min-height: 58px; padding: 3px; border-radius: 7px; }
+@media (max-width: 720px) {
+    .headerRight { width: 100%; justify-content: space-between; }
+    .cell { min-height: 62px; }
     .chipImg { display: none; }
-    .chipText { font-size: 0.6rem; -webkit-line-clamp: 3; line-clamp: 3; }
-    .cellNum { font-size: 0.65rem; }
+    .chipText { -webkit-line-clamp: 3; line-clamp: 3; }
+}
+
+@media (max-width: 420px) {
+    .thumb { width: 46px; }
+    .row { gap: var(--s2); padding: var(--s2); }
+    .gutter { width: 34px; }
 }

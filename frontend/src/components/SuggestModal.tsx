@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiAssign, apiProteinTypes, apiRecommendations, apiShortlist } from "../lib/api"
-import type { DeckCard } from "../lib/types"
+import type { RecipeFull } from "../lib/types"
 import { imageBox, macroLine, mealImage } from "../lib/format"
 import { useToast } from "../context/ToastContext"
+import { assign, useAppState } from "../store"
+import { useProteinTypes, useRecipeMap } from "../data/library"
+import { useIndex, useSignals } from "../data/taste"
+import { rank } from "../engine"
+import Icon from "./Icon"
 import Modal from "./Modal"
 import s from "./SuggestModal.module.css"
 
@@ -18,25 +21,40 @@ const TIME_OPTIONS = [20, 30, 45, 60, 90]
 /** how far down the ranking "surprise me" is willing to reach */
 const TOP_BAND = 25
 
+type Candidate = RecipeFull & { reasons: string[] }
+
 function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
     const { showToast } = useToast()
-    const queryClient = useQueryClient()
+    const state = useAppState()
+    const recipes = useRecipeMap()
+    const proteins = useProteinTypes()
+    const index = useIndex()
+    const signals = useSignals()
 
     const [protein, setProtein] = useState("")
     const [maxTime, setMaxTime] = useState("")
-    const [candidate, setCandidate] = useState<DeckCard | null>(null)
+    const [candidate, setCandidate] = useState<Candidate | null>(null)
     const [seen, setSeen] = useState<Set<number>>(new Set())
 
     // ranked by the taste engine rather than plain random
-    const { data: ranked } = useQuery({
-        queryKey: ["recommendations"],
-        queryFn: () => apiRecommendations(200),
-    })
-    const { data: shortlist } = useQuery({ queryKey: ["shortlist"], queryFn: apiShortlist })
-    const { data: proteins } = useQuery({ queryKey: ["protein-types"], queryFn: apiProteinTypes })
+    const ranked = useMemo(
+        () => rank(index, signals).map(r => ({
+            ...recipes.get(r.recipe.id)!,
+            reasons: r.reasons,
+        })),
+        [index, signals, recipes]
+    )
+
+    const shortlist = useMemo(
+        () => Object.entries(state.feedback)
+            .filter(([, f]) => f.shortlisted && f.verdict === "like")
+            .map(([id]) => recipes.get(Number(id)))
+            .filter((r): r is RecipeFull => !!r),
+        [state.feedback, recipes]
+    )
 
     const pool = useMemo(() => {
-        let list = ranked ?? []
+        let list = ranked
         if (protein) list = list.filter(r => r.protein_type === protein)
         if (maxTime) {
             list = list.filter(
@@ -71,18 +89,12 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
         setSeen(new Set())
     }
 
-    const assign = useMutation({
-        mutationFn: (recipeId: number) => apiAssign({ date, recipe_id: recipeId }),
-        onSuccess: entry => {
-            queryClient.invalidateQueries({ queryKey: ["week"] })
-            queryClient.invalidateQueries({ queryKey: ["grocery"] })
-            queryClient.invalidateQueries({ queryKey: ["shortlist"] })
-            queryClient.invalidateQueries({ queryKey: ["recommendations"] })
-            showToast(`Planned: ${entry.recipe.title}`)
-            onClose()
-        },
-        onError: (e: Error) => showToast(e.message, "error"),
-    })
+    const plan = (recipeId: number) => {
+        const recipe = recipes.get(recipeId)
+        assign(recipeId, date)
+        showToast(`Planned: ${recipe?.title ?? "meal"}`)
+        onClose()
+    }
 
     const img = candidate ? mealImage(candidate.image_url, "hero") : null
 
@@ -96,7 +108,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     aria-label="protein filter"
                 >
                     <option value="">Any protein</option>
-                    {(proteins ?? []).map(p => <option key={p} value={p}>{p}</option>)}
+                    {proteins.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
                 <select
                     className="field"
@@ -136,28 +148,26 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                         )}
                     </div>
                     <div className={s.actions}>
-                        <button
-                            className="btn primary"
-                            onClick={() => assign.mutate(candidate.id)}
-                            disabled={assign.isPending}
-                        >
-                            {assign.isPending ? "Planning…" : "Sounds good"}
+                        <button className="btn primary" onClick={() => plan(candidate.id)}>
+                            Sounds good
                         </button>
-                        <button className="btn" onClick={pick}>Skip →</button>
+                        <button className="btn" onClick={pick}>Skip</button>
                     </div>
                 </div>
             ) : (
                 <>
-                    {shortlist && shortlist.length > 0 && (
+                    {shortlist.length > 0 && (
                         <div className={s.shortlist}>
-                            <div className={s.shortlistHead}>♥ From your swipes</div>
+                            <div className={s.shortlistHead}>
+                                <Icon name="heart" size={14} filled />
+                                From your swipes
+                            </div>
                             <div className={s.shortlistRow}>
                                 {shortlist.slice(0, 6).map(r => (
                                     <button
                                         key={r.id}
                                         className={s.shortcut}
-                                        onClick={() => assign.mutate(r.id)}
-                                        disabled={assign.isPending}
+                                        onClick={() => plan(r.id)}
                                         title={r.title}
                                     >
                                         {mealImage(r.image_url, "thumb") && (
@@ -170,7 +180,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                         </div>
                     )}
                     <div className={s.start}>
-                        <button className="btn primary" onClick={pick}>🎲 Surprise me</button>
+                        <button className="btn primary" onClick={pick}>Surprise me</button>
                         <div className={s.poolNote}>
                             {pool.length} recipe{pool.length === 1 ? "" : "s"} ranked for your taste
                         </div>
@@ -179,7 +189,8 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
             )}
 
             <button className={`btn ghost ${s.generateLink}`} onClick={onGenerate}>
-                ✨ Generate something new instead →
+                <Icon name="sparkle" size={15} />
+                Generate something new instead
             </button>
         </Modal>
     )

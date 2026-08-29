@@ -1,10 +1,11 @@
 import { StrictMode, Suspense, lazy } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './context/ToastContext'
-import Nav, { Footer } from './components/Nav'
+import Nav from './components/Nav'
 import WeekView from './pages/week/WeekView'
+import { hydrate } from './store'
+import { loadRecipes } from './data/library'
 import './index.css'
 
 const DayDetail = lazy(() => import('./pages/day/DayDetail.tsx'))
@@ -14,16 +15,6 @@ const Discover = lazy(() => import('./pages/discover/Discover.tsx'))
 const History = lazy(() => import('./pages/discover/History.tsx'))
 const Profile = lazy(() => import('./pages/profile/Profile.tsx'))
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-})
-
 function Layout() {
   return (
     <>
@@ -31,20 +22,19 @@ function Layout() {
       <Suspense fallback={null}>
         <Outlet />
       </Suspense>
-      <Footer />
     </>
   )
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
+function App() {
+  return (
+    <StrictMode>
       <ToastProvider>
         <BrowserRouter>
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<WeekView />} />
-              <Route path="/day/:id" element={<DayDetail />} />
+              <Route path="/day/:date" element={<DayDetail />} />
               <Route path="/discover" element={<Discover />} />
               <Route path="/discover/history" element={<History />} />
               <Route path="/recipes" element={<RecipeBrowse />} />
@@ -54,6 +44,33 @@ createRoot(document.getElementById('root')!).render(
           </Routes>
         </BrowserRouter>
       </ToastProvider>
-    </QueryClientProvider>
-  </StrictMode>
+    </StrictMode>
+  )
+}
+
+function Failed({ error }: { error: unknown }) {
+  return (
+    <div className="page">
+      <h1>Foodify couldn't start</h1>
+      <p className="muted">{error instanceof Error ? error.message : String(error)}</p>
+      <button className="btn" onClick={() => location.reload()}>Try again</button>
+    </div>
+  )
+}
+
+// Mounting is async (see below), so the module can be evaluated again — by
+// Vite's HMR, or by the entry being pulled in twice — before the first render
+// lands. Creating a second root on the same node puts two React trees on one
+// DOM element, which share this app's module-level store and then update each
+// other mid-render. One root per container, reused.
+const container = document.getElementById('root')! as HTMLElement & { _root?: Root }
+const root = (container._root ??= createRoot(container))
+
+// Both the saved state and the recipe library are needed before anything can
+// render, and both are local — IndexedDB and a precached file — so waiting is a
+// few milliseconds rather than a network round trip. index.html paints a
+// placeholder in the meantime.
+Promise.all([hydrate(), loadRecipes()]).then(
+  () => root.render(<App />),
+  error => root.render(<Failed error={error} />),
 )

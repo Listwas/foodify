@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="preconnect" href="https://www.themealdb.com" />
     <link rel="dns-prefetch" href="https://www.themealdb.com" />
+    <!-- the app can't render without it, so start the fetch alongside the JS -->
+    <link rel="preload" href="/recipes.json" as="fetch" crossorigin="anonymous" />
 
     <!-- installable app. Android reads the manifest; iOS needs these explicitly -->
     <meta name="theme-color" content="#ee6b33" />
@@ -23,9 +25,21 @@
         localStorage.getItem("theme") === "light" ? "light" : "dark"
       )
     </script>
+    <style>
+      /* shown until React takes over, so the first frame isn't a blank page */
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font: 700 1.05rem/1 "Inter", system-ui, sans-serif;
+        letter-spacing: -0.02em;
+        color: #ee6b33;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="boot">foodify</div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

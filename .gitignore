@@ -1,16 +1,16 @@
-# python
+# python (the maintenance scripts in tools/)
 __pycache__/
 *.pyc
 .venv/
-.pytest_cache/
 
 # node
 node_modules/
 frontend/dist/
 
-# local data & secrets
-*.db
+# secrets — tools/.env holds the Gemini key used by seed.py
 .env
 
-# ...poza gotową biblioteką przepisów, która jedzie z repo
-!deploy/seed/foodify-seed.db
+# personal data: a state export from Taste -> Your data, or from
+# tools/migrate_state.py. Never belongs in the repo.
+foodify-backup*.json
+*.db

@@ -1,8 +1,9 @@
 import { useRef, useState } from "react"
-import { apiPhotoSearch } from "../lib/api"
+import { searchPhotos } from "../lib/photos"
 import type { StockPhoto } from "../lib/types"
 import { fileToSquareDataUrl, ImageError } from "../lib/image"
 import { useToast } from "../context/ToastContext"
+import Icon from "./Icon"
 import s from "./PhotoPicker.module.css"
 
 export interface PhotoChoice {
@@ -53,7 +54,7 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
                 return
             }
             const nextPage = results.length ? page + 1 : 1
-            const found = await apiPhotoSearch(query, nextPage)
+            const found = await searchPhotos(query, nextPage)
             if (found.length === 0) {
                 showToast(
                     results.length ? "No more photos for this dish" : "No photos found for this dish",
@@ -110,7 +111,8 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
                     disabled={busy || !query}
                     data-tip="Try a different photo"
                 >
-                    {busy ? "…" : value.image_url ? "🔀 Reroll photo" : "🔍 Find a photo"}
+                    <Icon name={value.image_url ? "swap" : "search"} size={15} />
+                    {busy ? "…" : value.image_url ? "Reroll photo" : "Find a photo"}
                 </button>
                 <button
                     type="button"
@@ -119,18 +121,20 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
                     disabled={busy}
                     data-tip="Use a photo from your device"
                 >
-                    ⬆ Upload your own
+                    <Icon name="upload" size={15} />
+                    Upload your own
                 </button>
                 {value.image_url && (
                     <button
                         type="button"
-                        className="btn ghost"
+                        className="btn ghost icon"
                         onClick={() =>
                             onChange({ image_url: null, image_is_stock: false, image_attribution: null })
                         }
+                        aria-label="remove the photo"
                         data-tip="Remove the photo"
                     >
-                        ✕
+                        <Icon name="close" size={16} />
                     </button>
                 )}
             </div>

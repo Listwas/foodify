@@ -25,7 +25,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // the API must never be answered with the cached app shell
+        // the recipe library is a static file the app cannot render without,
+        // so it belongs in the precache alongside the code — that's what makes
+        // the whole app work offline
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // the generate function must never be answered with the cached app shell
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
@@ -55,12 +60,10 @@ export default defineConfig({
     // reachable from the lan
     host: true,
     port: 5173,
-    // /api goes to fastapi, prefix stripped so it can't collide with spa routes
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
   },
+  // There is no dev API to proxy to: everything but recipe generation runs in
+  // the browser, and generation is a Cloudflare Pages Function. Under `vite
+  // dev` that route simply isn't there, so the app reports AI as off — exactly
+  // what a deployment without a key does. To exercise it locally, build and
+  // serve through `npx wrangler pages dev frontend/dist`.
 })
