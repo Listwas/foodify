@@ -18,10 +18,17 @@ interface Env {
     FOODIFY_FALLBACK_MODELS?: string
 }
 
-const DEFAULT_MODEL = "gemini-3.6-flash"
-// each model has its own free-tier allowance, so when the main one is spent we
-// keep going on a lighter one rather than failing outright
-const DEFAULT_FALLBACKS = "gemini-3.5-flash-lite"
+const DEFAULT_MODEL = "gemini-3-flash-preview"
+// Each model carries its own free-tier allowance, and they go temporarily
+// overloaded (503) independently of one another, so walking a chain buys both
+// more headroom and more resilience than any single model can. Verified against
+// a live key on 2026-08-31: all five answer structured-output requests.
+const DEFAULT_FALLBACKS = [
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+].join(",")
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
 
