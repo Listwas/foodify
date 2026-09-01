@@ -1,12 +1,16 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
+import { scaleQuantity } from "../../lib/quantity"
 import {
-    clearFeedback, deleteRecipe, isLocalRecipe, restoreRecipe, setFeedback, setImage,
+    clearFeedback, deleteRecipe, isLocalRecipe, restoreRecipe, servingsFor,
+    setFeedback, setImage, setRecipeServings, useAppState,
 } from "../../store"
+import { BASE_SERVINGS } from "../../store/types"
 import { useToast } from "../../context/ToastContext"
 import { useRecipe, useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
+import ServingsStepper from "../../components/ServingsStepper"
 import PhotoPicker, { type PhotoChoice } from "../../components/PhotoPicker"
 import DayPickerModal from "../../components/DayPickerModal"
 import RecipeFormModal from "../../components/RecipeFormModal"
@@ -20,6 +24,7 @@ function RecipePage() {
     const [confirmDelete, setConfirmDelete] = useState(false)
     const navigate = useNavigate()
     const { showToast } = useToast()
+    const state = useAppState()
     const recipes = useRecipeMap()
     const r = useRecipe(Number(id))
 
@@ -37,6 +42,7 @@ function RecipePage() {
 
     const hidden = r.verdict === "hidden"
     const liked = r.verdict === "like"
+    const servings = servingsFor(state, r.id)
     const img = mealImage(r.image_url, "hero")
     const photo: PhotoChoice = {
         image_url: r.image_url,
@@ -208,8 +214,21 @@ function RecipePage() {
             <div className={s.columns}>
                 <section>
                     <h2>Ingredients</h2>
+                    <ServingsStepper
+                        className={s.servings}
+                        value={servings}
+                        base={BASE_SERVINGS}
+                        onChange={next => setRecipeServings(r.id, next)}
+                    />
                     <ul className={s.ingredients}>
-                        {r.ingredients.map(i => <li key={i.id}>{ingredientLabel(i)}</li>)}
+                        {r.ingredients.map(i => (
+                            <li key={i.id}>
+                                {ingredientLabel({
+                                    ...i,
+                                    quantity: scaleQuantity(i.quantity, servings / BASE_SERVINGS),
+                                })}
+                            </li>
+                        ))}
                     </ul>
                 </section>
                 <section>

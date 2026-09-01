@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import type { RecipeFull } from "../../lib/types"
 import {
     addDays, addMonths, iso, monthGrid, monthLabel, rangeLabel,
@@ -81,6 +81,15 @@ function WeekView() {
             <div className="page-head">
                 <h1>Dinner plan</h1>
                 <div className={s.headerRight}>
+                    <Link
+                        className={`btn ${s.shopBtn}`}
+                        to={`/shopping/${iso(startOfWeek(mode === "week" ? anchor : new Date()))}`}
+                        data-tip="Everything this week needs, added up"
+                        data-tip-below
+                    >
+                        <Icon name="list" size={16} />
+                        Shopping
+                    </Link>
                     <div className={s.modes} role="tablist" aria-label="calendar range">
                         {(["week", "month"] as Mode[]).map(m => (
                             <button

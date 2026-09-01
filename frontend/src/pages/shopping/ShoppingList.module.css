@@ -1,0 +1,246 @@
+.weekNav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.rangeBtn {
+    min-width: 116px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- what the list is for --------------------------------------------- */
+
+.meals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    margin-bottom: var(--s4);
+}
+
+.meal {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--s2);
+    max-width: 100%;
+    padding: 6px 12px;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: 999px;
+    color: inherit;
+    font-size: 0.82rem;
+    text-decoration: none;
+}
+
+.meal:hover { border-color: var(--bg-30); }
+
+.mealCooked { opacity: 0.5; }
+
+.mealDay {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    flex: none;
+}
+
+.mealTitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mealServes {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    flex: none;
+}
+
+/* --- progress and actions --------------------------------------------- */
+
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s3);
+    margin-bottom: var(--s4);
+    padding-bottom: var(--s3);
+    border-bottom: 1px solid var(--bg-10);
+}
+
+.progress {
+    font-size: 0.875rem;
+    color: var(--text-dim);
+}
+
+.progress strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.note { color: var(--text-dim); }
+
+.barActions {
+    display: flex;
+    gap: var(--s2);
+}
+
+/* --- the list ---------------------------------------------------------- */
+
+/* Two columns on a desk, one in a shop. The break is deliberately high: a
+   phone held in one hand next to a trolley gets the full width. */
+.sections {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s4);
+}
+
+@media (min-width: 860px) {
+    .sections {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+.section {
+    background: var(--bg-5);
+    border: 1px solid var(--bg-10);
+    border-radius: var(--r2);
+    padding: var(--s3) var(--s4) var(--s2);
+    break-inside: avoid;
+}
+
+.sectionHead {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    margin: 0 0 var(--s2);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.sectionCount {
+    background: var(--bg-10);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 0.68rem;
+    letter-spacing: 0;
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Generous hit area: this is tapped with one thumb, holding a basket. */
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+.row:hover { background: var(--bg-10); }
+
+.row input {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.name {
+    flex: 1;
+    min-width: 0;
+}
+
+.amount {
+    flex: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    text-align: right;
+}
+
+.done .name,
+.done .amount {
+    text-decoration: line-through;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+/* --- where a total came from ------------------------------------------- */
+
+.why {
+    margin: 0 0 4px 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.why:hover { color: var(--accent); }
+
+.sources {
+    list-style: none;
+    margin: 0 0 var(--s2) 32px;
+    padding: var(--s2) 0 0;
+    display: grid;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    border-top: 1px dashed var(--bg-20);
+}
+
+.sources li {
+    display: flex;
+    gap: var(--s2);
+}
+
+.sources a { color: var(--text-dim); }
+.sources a:hover { color: var(--accent); }
+
+.sourceQty {
+    flex: none;
+    min-width: 68px;
+    color: var(--text);
+}
+
+/* --- nothing to buy ----------------------------------------------------- */
+
+.empty {
+    display: grid;
+    justify-items: center;
+    gap: var(--s3);
+    padding: var(--s6) var(--s4);
+    color: var(--text-dim);
+    text-align: center;
+    background: var(--bg-5);
+    border: 1px dashed var(--bg-20);
+    border-radius: var(--r2);
+}
+
+.empty p { margin: 0; font-size: 0.95rem; }
+
+@media (max-width: 720px) {
+    .weekNav { width: 100%; justify-content: space-between; }
+    .bar { position: sticky; top: 0; z-index: 5; background: var(--bg-0); padding-top: var(--s2); }
+}

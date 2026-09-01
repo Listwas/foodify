@@ -1,0 +1,58 @@
+.wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    flex-wrap: wrap;
+}
+
+.label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+
+.stepper {
+    display: flex;
+    align-items: center;
+    background: var(--bg-5);
+    border: 1px solid var(--bg-20);
+    border-radius: var(--r1);
+    overflow: hidden;
+}
+
+.step {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border: 0;
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+}
+
+.step:hover:not(:disabled) {
+    background: var(--bg-10);
+    color: var(--text);
+}
+
+.step:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.value {
+    min-width: 26px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Only shown once the amounts have actually moved, so it reads as an
+   explanation of what changed rather than as decoration. */
+.factor {
+    font-size: 0.75rem;
+    font-weight: 550;
+    color: var(--accent);
+}

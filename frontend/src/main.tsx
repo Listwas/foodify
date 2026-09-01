@@ -1,6 +1,6 @@
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Outlet, Link } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
 import Nav from './components/Nav'
 import WeekView from './pages/week/WeekView'
@@ -9,6 +9,7 @@ import { loadRecipes } from './data/library'
 import './index.css'
 
 const DayDetail = lazy(() => import('./pages/day/DayDetail.tsx'))
+const ShoppingList = lazy(() => import('./pages/shopping/ShoppingList.tsx'))
 const RecipeBrowse = lazy(() => import('./pages/recipes/RecipeBrowse.tsx'))
 const RecipePage = lazy(() => import('./pages/recipes/RecipePage.tsx'))
 const Discover = lazy(() => import('./pages/discover/Discover.tsx'))
@@ -26,6 +27,24 @@ function Layout() {
   )
 }
 
+/**
+ * Any address the app doesn't recognise.
+ *
+ * `_redirects` hands every path to index.html so deep links work, which means
+ * an unknown one reaches the router rather than the server. Without this it
+ * matched no route and rendered a blank page — including for anyone still
+ * running a cached copy from before a new page shipped.
+ */
+function NotFound() {
+  return (
+    <div className="page">
+      <h1>There's nothing here</h1>
+      <p className="muted">That address doesn't match anything in Foodify.</p>
+      <Link to="/" className="btn primary">Back to the plan</Link>
+    </div>
+  )
+}
+
 function App() {
   return (
     <StrictMode>
@@ -35,11 +54,14 @@ function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<WeekView />} />
               <Route path="/day/:date" element={<DayDetail />} />
+              <Route path="/shopping" element={<ShoppingList />} />
+              <Route path="/shopping/:start" element={<ShoppingList />} />
               <Route path="/discover" element={<Discover />} />
               <Route path="/discover/history" element={<History />} />
               <Route path="/recipes" element={<RecipeBrowse />} />
               <Route path="/recipe/:id" element={<RecipePage />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -14,7 +14,24 @@ export interface Feedback {
 export interface PlanSlot {
     recipeId: number
     status: "planned" | "completed"
+    /** How many this particular day is being cooked for. Snapshotted when the
+     *  meal is planned, so changing a recipe's default later can't quietly
+     *  rewrite a shopping list you already shopped from. Absent on plans made
+     *  before servings existed, which means the standard four. */
+    servings?: number
 }
+
+/**
+ * What the shipped recipes are written for.
+ *
+ * They come from TheMealDB, which carries no servings field at all, and its
+ * recipes are family-sized. Four is the assumption every scaled amount is
+ * relative to; nothing in the data can confirm it, so it's stated here once
+ * rather than buried in a component.
+ */
+export const BASE_SERVINGS = 4
+export const MIN_SERVINGS = 1
+export const MAX_SERVINGS = 20
 
 export interface Pref {
     id: number
@@ -65,6 +82,7 @@ export interface AppState {
     customRecipes: RecipeFull[]
     images: Record<number, ImageOverride> // recipeId
     edits: Record<number, RecipeEdit>     // recipeId
+    servings: Record<number, number>      // recipeId — how many you usually cook it for
     nextId: number
     nextPrefId: number
     nextSeq: number
@@ -74,7 +92,7 @@ export interface AppState {
  *  seeded library, however much it grows. */
 export const FIRST_LOCAL_ID = 1_000_000
 
-export const STATE_VERSION = 1
+export const STATE_VERSION = 2
 
 export const emptyState = (): AppState => ({
     version: STATE_VERSION,
@@ -85,6 +103,7 @@ export const emptyState = (): AppState => ({
     customRecipes: [],
     images: {},
     edits: {},
+    servings: {},
     nextId: FIRST_LOCAL_ID,
     nextPrefId: 1,
     nextSeq: 1,

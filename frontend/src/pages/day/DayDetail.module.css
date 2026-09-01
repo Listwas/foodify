@@ -114,6 +114,10 @@
     padding: 14px 16px;
 }
 
+.servings {
+    margin-bottom: var(--s3);
+}
+
 .checklist {
     list-style: none;
     margin: 0;
@@ -121,6 +125,23 @@
     display: flex;
     flex-direction: column;
 }
+
+/* One day's shopping is rarely one trip, so the way out to the whole week sits
+   at the end of the list rather than competing with the day's own actions. */
+.weekLink {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s2);
+    margin-top: var(--s3);
+    padding-top: var(--s3);
+    border-top: 1px solid var(--bg-10);
+    width: 100%;
+    color: var(--accent);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.weekLink:hover { text-decoration: underline; }
 
 .checklist label {
     display: flex;

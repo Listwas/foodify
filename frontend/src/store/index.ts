@@ -11,7 +11,8 @@ import type { RecipeCandidate, RecipeFull, Stance, Verdict } from "../lib/types"
 import { iso } from "../lib/dates"
 import { load, migrate, save } from "./db"
 import {
-    emptyState, groceryKey, planKey, FIRST_LOCAL_ID,
+    emptyState, groceryKey, planKey, BASE_SERVINGS, FIRST_LOCAL_ID,
+    MAX_SERVINGS, MIN_SERVINGS,
     type AppState, type ImageOverride, type PlanSlot, type RecipeEdit,
 } from "./types"
 
@@ -62,7 +63,14 @@ export function useAppState(): AppState {
 
 export function assign(recipeId: number, date: string, slot = "dinner") {
     update(s => ({
-        plan: { ...s.plan, [planKey(date, slot)]: { recipeId, status: "planned" } },
+        plan: {
+            ...s.plan,
+            [planKey(date, slot)]: {
+                recipeId,
+                status: "planned",
+                servings: s.servings[recipeId] ?? BASE_SERVINGS,
+            },
+        },
     }))
 }
 
@@ -86,6 +94,42 @@ export function markCooked(date: string, done: boolean, slot = "dinner") {
         if (!entry) return {}
         const next: PlanSlot = { ...entry, status: done ? "completed" : "planned" }
         return { plan: { ...s.plan, [key]: next } }
+    })
+}
+
+// --- servings -----------------------------------------------------------
+
+const clampServings = (n: number) =>
+    Math.min(MAX_SERVINGS, Math.max(MIN_SERVINGS, Math.round(n) || BASE_SERVINGS))
+
+/**
+ * How many people a meal is being cooked for.
+ *
+ * A day on the plan carries its own number, because cooking for two on a
+ * Tuesday and six on a Saturday is the whole reason to scale anything.
+ * Everywhere else falls back to what the user last chose for that recipe, and
+ * then to what the library is written for.
+ */
+export function servingsFor(
+    s: AppState, recipeId: number, date?: string, slot = "dinner"
+): number {
+    const planned = date ? s.plan[planKey(date, slot)] : undefined
+    if (planned?.recipeId === recipeId && planned.servings) return planned.servings
+    return s.servings[recipeId] ?? BASE_SERVINGS
+}
+
+/** Remember how many this household usually cooks this recipe for. */
+export function setRecipeServings(recipeId: number, servings: number) {
+    update(s => ({ servings: { ...s.servings, [recipeId]: clampServings(servings) } }))
+}
+
+/** Change one day without touching the recipe's default or any other day. */
+export function setDayServings(date: string, servings: number, slot = "dinner") {
+    const key = planKey(date, slot)
+    update(s => {
+        const entry = s.plan[key]
+        if (!entry) return {}
+        return { plan: { ...s.plan, [key]: { ...entry, servings: clampServings(servings) } } }
     })
 }
 
@@ -163,9 +207,22 @@ export function removePref(id: number) {
 export function setCheck(
     date: string, slot: string, ingredientId: number, checked: boolean
 ) {
-    update(s => ({
-        grocery: { ...s.grocery, [groceryKey(date, slot, ingredientId)]: checked },
-    }))
+    setChecks([groceryKey(date, slot, ingredientId)], checked)
+}
+
+/**
+ * Tick or untick several at once.
+ *
+ * A line on the weekly list is usually one ingredient drawn from two or three
+ * different days. Buying it satisfies all of them, so all of them get ticked
+ * and the day pages agree with the list you shopped from.
+ */
+export function setChecks(keys: string[], checked: boolean) {
+    update(s => {
+        const grocery = { ...s.grocery }
+        for (const key of keys) grocery[key] = checked
+        return { grocery }
+    })
 }
 
 // --- user recipes and photos --------------------------------------------
@@ -247,6 +304,8 @@ export function deleteRecipe(recipeId: number) {
         delete images[recipeId]
         const edits = { ...s.edits }
         delete edits[recipeId]
+        const servings = { ...s.servings }
+        delete servings[recipeId]
         return {
             customRecipes: s.customRecipes.filter(r => r.id !== recipeId),
             plan: Object.fromEntries(
@@ -260,6 +319,7 @@ export function deleteRecipe(recipeId: number) {
             feedback,
             images,
             edits,
+            servings,
         }
     })
 }

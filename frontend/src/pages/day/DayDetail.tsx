@@ -1,12 +1,14 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import { dayLong } from "../../lib/dates"
+import { dayLong, iso, startOfWeek } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
+import { scaleQuantity } from "../../lib/quantity"
 import { useToast } from "../../context/ToastContext"
-import { markCooked, setCheck, useAppState } from "../../store"
-import { groceryKey, planKey } from "../../store/types"
+import { markCooked, servingsFor, setCheck, setDayServings, useAppState } from "../../store"
+import { BASE_SERVINGS, groceryKey, planKey } from "../../store/types"
 import { useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
+import ServingsStepper from "../../components/ServingsStepper"
 import SuggestModal from "../../components/SuggestModal"
 import GenerateModal from "../../components/GenerateModal"
 import s from "./DayDetail.module.css"
@@ -36,8 +38,10 @@ function DayDetail() {
     }
 
     const cooked = slot.status === "completed"
+    const servings = servingsFor(state, recipe.id, date, SLOT)
     const items = recipe.ingredients.map(i => ({
         ...i,
+        quantity: scaleQuantity(i.quantity, servings / BASE_SERVINGS),
         checked: state.grocery[groceryKey(date, SLOT, i.id)] ?? false,
     }))
     const checkedCount = items.filter(i => i.checked).length
@@ -104,6 +108,12 @@ function DayDetail() {
                         Groceries
                         <span className={s.count}>{checkedCount}/{items.length}</span>
                     </h2>
+                    <ServingsStepper
+                        className={s.servings}
+                        value={servings}
+                        base={BASE_SERVINGS}
+                        onChange={next => setDayServings(date, next, SLOT)}
+                    />
                     <ul className={s.checklist}>
                         {items.map(item => (
                             <li key={item.id}>
@@ -118,6 +128,13 @@ function DayDetail() {
                             </li>
                         ))}
                     </ul>
+                    <Link
+                        to={`/shopping/${iso(startOfWeek(new Date(`${date}T00:00`)))}`}
+                        className={s.weekLink}
+                    >
+                        <Icon name="list" size={14} />
+                        Everything for this week
+                    </Link>
                 </section>
 
                 <section className={s.instructions}>

@@ -204,6 +204,10 @@
     margin: 0 0 10px;
 }
 
+.servings {
+    margin-bottom: var(--s3);
+}
+
 .ingredients {
     margin: 0;
     padding-left: 20px;
