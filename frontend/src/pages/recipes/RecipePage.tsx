@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
-import { scaleQuantity } from "../../lib/quantity"
+import { kitchenQuantity } from "../../lib/quantity"
 import {
     clearFeedback, deleteRecipe, isLocalRecipe, restoreRecipe, servingsFor,
     setFeedback, setImage, setRecipeServings, useAppState,
@@ -225,7 +225,7 @@ function RecipePage() {
                             <li key={i.id}>
                                 {ingredientLabel({
                                     ...i,
-                                    quantity: scaleQuantity(i.quantity, servings / BASE_SERVINGS),
+                                    quantity: kitchenQuantity(i.quantity, servings / BASE_SERVINGS),
                                 })}
                             </li>
                         ))}

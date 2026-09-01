@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import {
-    formatAmount, parseAmount, prettyNumber, scaleQuantity, splitEntry, sumAmounts,
+    formatAmount, kitchenQuantity, parseAmount, prettyNumber, scaleQuantity,
+    splitEntry, sumAmounts, toMetric,
 } from "./quantity"
 
 describe("scaleQuantity", () => {
@@ -107,6 +108,63 @@ describe("parseAmount", () => {
     })
 })
 
+/*
+ * Roughly 140 rows of the library came from American sources. Nobody here
+ * weighs dinner in pounds, so none of them are allowed to reach the screen.
+ */
+describe("toMetric", () => {
+    it("says a pound the way a conversion chart does", () => {
+        expect(toMetric("1 lb")).toBe("450 g")
+        expect(toMetric("1/2 lb")).toBe("230 g")
+        expect(toMetric("2 Lbs")).toBe("910 g")
+        expect(toMetric("16 ounces")).toBe("450 g")
+    })
+
+    it("moves up to kilograms when the number gets big", () => {
+        expect(toMetric("4 lb")).toBe("1.81 kg")
+        expect(toMetric("4-5 pound")).toBe("1.81-2.27 kg")
+    })
+
+    it("keeps whatever was written after the unit", () => {
+        expect(toMetric("14 oz jar")).toBe("400 g jar")
+        expect(toMetric("8-ounce sliced")).toBe("230 g sliced")
+    })
+
+    /* A few rows give both, so the recipe has already done the conversion.
+       Keep its answer rather than recomputing a slightly different one. */
+    it("keeps the metric half when an amount is stated twice", () => {
+        expect(toMetric("650g/1lb 8 oz")).toBe("650g")
+        expect(toMetric("12 ounces (340g)")).toBe("340g")
+        expect(toMetric("8 ounces (230 grams)")).toBe("230 grams")
+    })
+
+    it("converts imperial that isn't the leading amount", () => {
+        // one tin, described by its weight
+        expect(toMetric("1 (12 oz.)")).toBe("1 (340 g)")
+    })
+
+    it("leaves alone what is already ours", () => {
+        expect(toMetric("200g")).toBe("200g")
+        expect(toMetric("2 tbsp")).toBe("2 tbsp")
+        expect(toMetric("Pinch")).toBe("Pinch")
+        // an inch is a cut, not a weight
+        expect(toMetric("1 cut into 1/2-inch cubes")).toBe("1 cut into 1/2-inch cubes")
+    })
+})
+
+describe("kitchenQuantity", () => {
+    it("scales first, then converts", () => {
+        expect(kitchenQuantity("1 lb", 2)).toBe("910 g")
+        expect(kitchenQuantity("1 lb", 0.5)).toBe("230 g")
+        expect(kitchenQuantity("8 oz", 1)).toBe("230 g")
+    })
+
+    it("still does the ordinary thing to ordinary amounts", () => {
+        expect(kitchenQuantity("200g", 2)).toBe("400g")
+        expect(kitchenQuantity("2 cloves minced", 0.5)).toBe("1 clove minced")
+    })
+})
+
 describe("splitEntry", () => {
     it("takes the unit with the amount when it really is one", () => {
         expect(splitEntry("2 kg potatoes")).toEqual({ quantity: "2 kg", name: "potatoes" })
@@ -184,6 +242,26 @@ describe("the shipped library", () => {
         const numeric = rows.filter(r => /\d/.test(r.quantity.split(" ").slice(0, 2).join(" ")))
         const parsed = numeric.filter(r => parseAmount(r.quantity, r.unit))
         expect(parsed.length / numeric.length).toBeGreaterThan(0.98)
+    })
+
+    it("shows no pounds or ounces anywhere, at any serving size", () => {
+        const imperial = /\b(lbs?|pounds?|oz|ounces?)\b/i
+        const offenders = new Set<string>()
+        for (const row of rows) {
+            for (const factor of [0.25, 0.5, 1, 1.5, 2, 3]) {
+                const shown = kitchenQuantity(row.quantity, factor)
+                if (imperial.test(shown)) offenders.add(`${row.quantity} -> ${shown}`)
+            }
+        }
+        expect([...offenders]).toEqual([])
+    })
+
+    it("hands the shopping list metric amounts to add up", () => {
+        for (const row of rows) {
+            const amount = parseAmount(kitchenQuantity(row.quantity), row.unit)
+            expect(amount?.unit).not.toBe("lb")
+            expect(amount?.unit).not.toBe("oz")
+        }
     })
 
     it("never scales an amount into something unreadable", () => {

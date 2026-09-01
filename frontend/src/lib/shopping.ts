@@ -14,7 +14,7 @@ import { normalize } from "../engine/taste"
 import { BASE_SERVINGS, groceryKey, planKey, type AppState } from "../store/types"
 import { sectionFor, sectionRank, type Section } from "./aisles"
 import { addDays, iso } from "./dates"
-import { formatAmount, parseAmount, scaleQuantity, sumAmounts } from "./quantity"
+import { formatAmount, kitchenQuantity, parseAmount, sumAmounts } from "./quantity"
 import type { RecipeFull } from "./types"
 
 export interface ShoppingSource {
@@ -129,7 +129,7 @@ export function buildShoppingWeek(
             const display = ingredient.name.trim()
             const normalized = normalize(display)
             if (!normalized) continue
-            const quantity = scaleQuantity(ingredient.quantity, factor)
+            const quantity = kitchenQuantity(ingredient.quantity, factor)
             rows.push({
                 normalized,
                 display,

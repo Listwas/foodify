@@ -159,20 +159,109 @@ const UNITS: Record<string, string> = {
 const FAMILY: Record<string, { base: string; per: number }> = {
   g: { base: "g", per: 1 },
   kg: { base: "g", per: 1000 },
-  lb: { base: "g", per: 453.592 },
-  oz: { base: "g", per: 28.3495 },
   ml: { base: "ml", per: 1 },
   l: { base: "ml", per: 1000 },
 }
 
+/**
+ * Weights the library inherited from American sources, in grams.
+ *
+ * Nobody shopping here weighs anything in pounds, so these never reach the
+ * screen: `parseAmount` turns them into grams on the way in and `toMetric`
+ * rewrites them wherever the original text is shown.
+ */
+const IMPERIAL_MASS: Record<string, number> = { lb: 453.592, oz: 28.3495 }
+
+/**
+ * A converted weight as a person would write it.
+ *
+ * 453.592 g is arithmetic. 450 g is a shopping list, and it is what every
+ * conversion chart prints for a pound, because five grams of chicken has
+ * never changed a dinner.
+ */
+function roundMetric(grams: number): number {
+  if (grams < 100) return Math.round(grams / 5) * 5
+  return Math.round(grams / 10) * 10
+}
+
 /** The unit word sitting immediately after the number, canonicalised. */
 function unitToken(rest: string): string {
-  const word = rest.trim().split(/[\s,]+/)[0] ?? ""
+  // the hyphen is for "8-ounce sliced", which is one written amount
+  const word = rest.replace(/^[\s-]+/, "").split(/[\s,]+/)[0] ?? ""
   return UNITS[word.toLowerCase().replace(/\.$/, "")] ?? ""
 }
 
 /** Written as decimals; the rest of the world's units take fractions. */
 const METRIC = new Set(["g", "kg", "ml", "l"])
+
+const IMPERIAL_ANYWHERE = /\b(lbs?|pounds?|oz|ounces?)\b/i
+
+/** In grams or kilograms, whichever the size calls for. */
+const asMetric = (grams: number) =>
+  grams >= 1000 ? `${decimal(grams / 1000)} kg` : `${grams} g`
+
+/**
+ * A handful of rows state one amount twice, once each way: "650g/1lb 8 oz",
+ * "12 ounces (340g)". The recipe has already done the conversion, so keep its
+ * answer and drop the half we can't shop with.
+ */
+function dropRestatement(text: string): string {
+  const metricThenImperial = text.match(/^(.*?\d\s*(?:kg|g|ml|l)\b)\s*\/\s*(.+)$/i)
+  if (metricThenImperial && IMPERIAL_ANYWHERE.test(metricThenImperial[2])) {
+    return metricThenImperial[1]
+  }
+  const imperialThenMetric = text.match(/\(\s*([^)]*\d\s*(?:kg|g|ml|l|grams?|kilograms?)[^)]*)\)/i)
+  if (imperialThenMetric && IMPERIAL_ANYWHERE.test(text.slice(0, imperialThenMetric.index))) {
+    return imperialThenMetric[1].trim()
+  }
+  return text
+}
+
+// Imperial that isn't the amount at the front, as in "1 (12 oz.)" — one tin,
+// described by its imperial weight.
+const EMBEDDED = /(\d+(?:\.\d+)?|\d+\/\d+)\s*(lbs?|pounds?|oz|ounces?)\b\.?/gi
+
+const sweepEmbedded = (text: string) =>
+  text.replace(EMBEDDED, (_, count: string, unit: string) =>
+    asMetric(roundMetric(toNumber(count) * IMPERIAL_MASS[UNITS[unit.toLowerCase()]])))
+
+/**
+ * Rewrite an imperial weight in grams or kilograms.
+ *
+ * Text in, text out, the same way `scaleQuantity` works, so whatever follows
+ * the unit is carried through: "14 oz jar" becomes "400 g jar". Anything with
+ * no pound or ounce in it is returned exactly as it arrived.
+ */
+export function toMetric(quantity: string): string {
+  if (!quantity || !IMPERIAL_ANYWHERE.test(quantity)) return quantity
+
+  const text = dropRestatement(deVulgar(quantity))
+  if (!IMPERIAL_ANYWHERE.test(text)) return text
+
+  const match = text.match(LEADING)
+  const rest = match ? text.slice(match[0].length) : ""
+  const perUnit = match ? IMPERIAL_MASS[unitToken(rest)] : undefined
+  // imperial, but not as the leading amount
+  if (!match || !perUnit) return sweepEmbedded(text)
+
+  const low = roundMetric(toNumber(match[1]) * perUnit)
+  const high = match[2] ? roundMetric(toNumber(match[2]) * perUnit) : null
+  // one unit for the whole range: "1.81-2.27 kg", not "1.81 kg-2.27 kg"
+  const kilos = Math.max(low, high ?? 0) >= 1000
+  const show = (grams: number) => (kilos ? decimal(grams / 1000) : String(grams))
+
+  const tail = sweepEmbedded(rest.replace(/^[\s-]*[A-Za-z]+\.?/, ""))
+  const amount = high !== null ? `${show(low)}-${show(high)}` : show(low)
+  return `${amount} ${kilos ? "kg" : "g"}${tail}`
+}
+
+/**
+ * An amount as it should read in this kitchen: scaled to the number of people,
+ * then said in the units people here actually use.
+ */
+export function kitchenQuantity(quantity: string, factor = 1): string {
+  return toMetric(scaleQuantity(quantity, factor))
+}
 
 export interface Amount {
   value: number
@@ -197,10 +286,12 @@ export function parseAmount(quantity: string, column = ""): Amount | null {
 
   const rest = text.slice(match[0].length)
   const stated = column.trim()
-  return {
-    value,
-    unit: stated ? UNITS[stated.toLowerCase()] ?? "" : unitToken(rest),
-  }
+  const unit = stated ? UNITS[stated.toLowerCase()] ?? "" : unitToken(rest)
+
+  // pounds are normalised here rather than downstream, so every total, every
+  // sum and every comparison past this point is already metric
+  const perUnit = IMPERIAL_MASS[unit]
+  return perUnit ? { value: roundMetric(value * perUnit), unit: "g" } : { value, unit }
 }
 
 /** Metric is written 1.5 kg, never 1 1/2 kg. Fractions are for spoons. */

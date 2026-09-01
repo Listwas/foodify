@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { dayLong, iso, startOfWeek } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
-import { scaleQuantity } from "../../lib/quantity"
+import { kitchenQuantity } from "../../lib/quantity"
 import { useToast } from "../../context/ToastContext"
 import { markCooked, servingsFor, setCheck, setDayServings, useAppState } from "../../store"
 import { BASE_SERVINGS, groceryKey, planKey } from "../../store/types"
@@ -41,7 +41,7 @@ function DayDetail() {
     const servings = servingsFor(state, recipe.id, date, SLOT)
     const items = recipe.ingredients.map(i => ({
         ...i,
-        quantity: scaleQuantity(i.quantity, servings / BASE_SERVINGS),
+        quantity: kitchenQuantity(i.quantity, servings / BASE_SERVINGS),
         checked: state.grocery[groceryKey(date, SLOT, i.id)] ?? false,
     }))
     const checkedCount = items.filter(i => i.checked).length
