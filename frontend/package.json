@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package": "npm run build && rm -f ../foodify-dist.zip && cd dist && zip -rq ../../foodify-dist.zip .",
+    "deploy": "npm run build && cd .. && wrangler pages deploy frontend/dist --project-name foodify"
   },
   "dependencies": {
     "react": "^19.1.1",

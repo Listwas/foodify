@@ -7,6 +7,9 @@ __pycache__/
 node_modules/
 frontend/dist/
 
+# build artefact for a Cloudflare direct upload
+foodify-dist.zip
+
 # secrets — tools/.env holds the Gemini key used by seed.py
 .env
 

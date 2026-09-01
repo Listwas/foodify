@@ -54,7 +54,21 @@ npm test           # taste-engine tests
 
 ## deploy it
 
-Cloudflare Pages, free tier:
+Cloudflare Pages, free tier. Two routes.
+
+**From the command line** — one command, and it reports exactly what went wrong
+if anything does. Log in once (opens a browser), then deploy:
+
+```sh
+cd frontend
+npx wrangler login
+npm run deploy
+```
+
+This uploads `frontend/dist` *and* `functions/`, so recipe generation works too.
+Re-run `npm run deploy` to publish an update.
+
+**Or connect the git repo**, which rebuilds on every push:
 
 | setting | value |
 |---|---|
