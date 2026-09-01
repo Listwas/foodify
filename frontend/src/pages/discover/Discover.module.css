@@ -63,11 +63,17 @@
 
 /* The photo takes whatever is left once the text has what it needs. Pinning it
    to a square is what squeezed the title on a laptop: 378px of image inside a
-   461px card left 81px for text that wanted 116. */
-.img {
-    width: 100%;
+   461px card left 81px for text that wanted 116. The flexing happens on the
+   wrapper so the Details button has something to anchor to. */
+.photo {
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
+    display: flex;
+}
+.img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     pointer-events: none;
 }
@@ -76,6 +82,31 @@
     place-items: center;
     background: var(--bg-10);
     color: var(--text-dim);
+}
+
+/* Sits on the photo rather than in the text, which has no height to spare. */
+.detailsBtn {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.66);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(3px);
+}
+.detailsBtn:hover { background: rgba(0, 0, 0, 0.84); }
+
+/* A thumb needs more than a mouse pointer does. */
+@media (hover: none) {
+    .detailsBtn { padding: 9px 15px; font-size: 0.82rem; }
 }
 
 /* never squeezed: the text is the part you swipe on */
@@ -115,6 +146,96 @@
     padding: 3px 10px;
     font-size: 0.73rem;
     font-weight: 600;
+}
+
+/* --- the recipe, over the card ---------------------------------------- */
+
+.details {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-5);
+    border-radius: 18px;
+    /* the card sets touch-action: none to own the drag; the list inside here
+       has to be allowed to scroll on a phone */
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    user-select: text;
+    animation: detailsIn 0.16s ease-out;
+}
+
+@keyframes detailsIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+}
+
+.detailsHead {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s2);
+    padding: 14px 10px 10px 16px;
+    border-bottom: 1px solid var(--bg-10);
+    flex: none;
+}
+
+.detailsHead h3 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 620;
+    line-height: 1.3;
+}
+
+.detailsClose {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    background: var(--bg-10);
+    color: var(--text-dim);
+    cursor: pointer;
+}
+.detailsClose:hover { background: var(--bg-20); color: var(--text); }
+
+@media (hover: none) {
+    .detailsClose { width: 38px; height: 38px; }
+}
+
+.detailsBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px 16px;
+}
+
+.detailsBody h4 {
+    margin: 0 0 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.detailsList {
+    margin: 0 0 16px;
+    padding-left: 18px;
+    font-size: 0.86rem;
+    line-height: 1.6;
+}
+
+.detailsMethod {
+    margin: 0;
+    white-space: pre-wrap;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--text-dim);
 }
 
 .stamp {
@@ -217,7 +338,7 @@
 @media (max-height: 560px) and (min-width: 600px) {
     .stage { width: min(660px, 100%); max-height: none; }
     .card { flex-direction: row; }
-    .img { width: 44%; height: 100%; flex: none; }
+    .photo { width: 44%; height: 100%; flex: none; }
     .body {
         flex: 1;
         min-width: 0;

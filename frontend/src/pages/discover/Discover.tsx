@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import type { RecipeFull, Verdict } from "../../lib/types"
-import { imageBox, macroLine, mealImage } from "../../lib/format"
+import { imageBox, ingredientLabel, macroLine, mealImage } from "../../lib/format"
+import { kitchenQuantity } from "../../lib/quantity"
 import { useSwipe, type SwipeDir } from "../../lib/useSwipe"
 import { useToast } from "../../context/ToastContext"
 import { clearFeedback, getState, lastJudged, setFeedback } from "../../store"
@@ -23,40 +24,94 @@ const VERDICT_OF: Record<SwipeDir, Verdict> = {
 
 const LABEL: Record<SwipeDir, string> = { right: "Yes", left: "Pass", down: "Hide" }
 
-function SwipeCard({ card, onCommit, top }: {
+/**
+ * What's actually in the dish, over the card rather than in it.
+ *
+ * The deck is one screenful by design, and the photo already gives up its
+ * height to the title on a laptop, so there is nowhere to put a list of
+ * ingredients without squeezing something that was tuned not to be squeezed.
+ * Laid over the card instead: the stage keeps its size and this gets to scroll.
+ */
+function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
+    return (
+        <div className={s.details}>
+            <div className={s.detailsHead}>
+                <h3>{card.title}</h3>
+                <button className={s.detailsClose} onClick={onClose} aria-label="close details">
+                    <Icon name="close" size={18} />
+                </button>
+            </div>
+            <div className={s.detailsBody}>
+                <h4>Ingredients</h4>
+                <ul className={s.detailsList}>
+                    {card.ingredients.map(i => (
+                        <li key={i.id}>
+                            {ingredientLabel({ ...i, quantity: kitchenQuantity(i.quantity) })}
+                        </li>
+                    ))}
+                </ul>
+                <h4>Method</h4>
+                <p className={s.detailsMethod}>
+                    {card.instructions || "No instructions recorded."}
+                </p>
+            </div>
+        </div>
+    )
+}
+
+function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
     card: Card
     onCommit: (dir: SwipeDir) => void
     top: boolean
+    open: boolean
+    onOpen: () => void
+    onClose: () => void
 }) {
     const { handlers, style, intent } = useSwipe(onCommit)
     const img = mealImage(card.image_url, "hero")
+    // dragging while reading would fling the card away mid-sentence
+    const draggable = top && !open
 
     return (
         <div
             className={`${s.card} ${top ? s.top : s.behind}`}
             style={top ? style : undefined}
-            {...(top ? handlers : {})}
+            {...(draggable ? handlers : {})}
         >
-            {intent.dir && top && (
+            {intent.dir && draggable && (
                 <div className={`${s.stamp} ${s[intent.dir]}`} style={{ opacity: intent.strength }}>
                     {LABEL[intent.dir]}
                 </div>
             )}
-            {img ? (
-                <img
-                    className={`${s.img} meal-img`}
-                    src={img}
-                    width={imageBox("hero")}
-                    height={imageBox("hero")}
-                    alt=""
-                    draggable={false}
-                    onLoad={e => e.currentTarget.setAttribute("data-loaded", "true")}
-                />
-            ) : (
-                <div className={`${s.img} ${s.placeholder}`}>
-                    <Icon name={card.source === "ai" ? "sparkle" : "plate"} size={40} />
-                </div>
-            )}
+            <div className={s.photo}>
+                {img ? (
+                    <img
+                        className={`${s.img} meal-img`}
+                        src={img}
+                        width={imageBox("hero")}
+                        height={imageBox("hero")}
+                        alt=""
+                        draggable={false}
+                        onLoad={e => e.currentTarget.setAttribute("data-loaded", "true")}
+                    />
+                ) : (
+                    <div className={`${s.img} ${s.placeholder}`}>
+                        <Icon name={card.source === "ai" ? "sparkle" : "plate"} size={40} />
+                    </div>
+                )}
+                {top && !open && (
+                    <button
+                        className={s.detailsBtn}
+                        onClick={onOpen}
+                        // the card is one big drag surface; without this the
+                        // press that opens the details also starts a swipe
+                        onPointerDown={e => e.stopPropagation()}
+                    >
+                        <Icon name="list" size={14} />
+                        Details
+                    </button>
+                )}
+            </div>
             <div className={s.body}>
                 <h2>{card.title}</h2>
                 <div className={s.meta}>
@@ -70,6 +125,7 @@ function SwipeCard({ card, onCommit, top }: {
                     </div>
                 )}
             </div>
+            {open && <CardDetails card={card} onClose={onClose} />}
         </div>
     )
 }
@@ -83,6 +139,9 @@ function Discover() {
     const [undoStack, setUndoStack] = useState<Card[]>([])
     const [swiped, setSwiped] = useState(0)
     const [dealt, setDealt] = useState(false)
+    // by card id, not a flag: a deal that moves on must never leave the
+    // details of a card that is no longer on top hanging open
+    const [preview, setPreview] = useState<number | null>(null)
 
     /**
      * Deal a fresh deck. Reads the store directly rather than through a hook so
@@ -115,6 +174,7 @@ function Discover() {
         // one arrow key was landing as two swipes. Updaters stay pure.
         const [card, ...rest] = queue
         if (!card) return
+        setPreview(null)
         setFeedback(card.id, VERDICT_OF[dir])
         setUndoStack(stack => [card, ...stack])
         setSwiped(n => n + 1)
@@ -124,6 +184,7 @@ function Discover() {
     }, [queue, dealCards])
 
     const undo = useCallback(() => {
+        setPreview(null)
         const card = undoStack[0]
         if (card) {
             clearFeedback(card.id)
@@ -148,18 +209,25 @@ function Discover() {
         showToast(`Back: ${recipe.title}`)
     }, [undoStack, recipes, showToast])
 
+    const visible = useMemo(() => queue.slice(0, 3).reverse(), [queue])
+    const top = queue[0]
+
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            // reading the recipe, not judging it: the arrows would otherwise
+            // swipe away the card being read
+            if (preview !== null) {
+                if (e.key === "Escape" || e.key === "ArrowUp") setPreview(null)
+                return
+            }
             if (e.key === "ArrowRight") commit("right")
             else if (e.key === "ArrowLeft") commit("left")
             else if (e.key === "ArrowDown") commit("down")
+            else if (e.key === "ArrowUp" && top) setPreview(top.id)
         }
         window.addEventListener("keydown", onKey)
         return () => window.removeEventListener("keydown", onKey)
-    }, [commit])
-
-    const visible = useMemo(() => queue.slice(0, 3).reverse(), [queue])
-    const top = queue[0]
+    }, [commit, preview, top])
 
     return (
         <div className={`page ${s.page}`}>
@@ -173,7 +241,8 @@ function Discover() {
                 </div>
             </div>
             <p className={s.hint}>
-                Swipe or use ← → keys. Everything you keep trains what the app suggests everywhere else.
+                Swipe or use ← → keys, ↑ for what's in it. Everything you keep trains what
+                the app suggests everywhere else.
             </p>
 
             <div className={s.stage}>
@@ -183,6 +252,9 @@ function Discover() {
                             key={card.id}
                             card={card}
                             top={i === visible.length - 1}
+                            open={preview === card.id}
+                            onOpen={() => setPreview(card.id)}
+                            onClose={() => setPreview(null)}
                             onCommit={commit}
                         />
                     ))
