@@ -38,6 +38,7 @@ export async function loadRecipes(): Promise<void> {
 let structuralCache: {
     custom: AppState["customRecipes"]
     images: AppState["images"]
+    edits: AppState["edits"]
     value: RecipeFull[]
 } | null = null
 
@@ -50,20 +51,25 @@ let structuralCache: {
  */
 export function structuralRecipes(s: AppState = getState()): RecipeFull[] {
     if (structuralCache && structuralCache.custom === s.customRecipes
-        && structuralCache.images === s.images) {
+        && structuralCache.images === s.images && structuralCache.edits === s.edits) {
         return structuralCache.value
     }
     const value = [...base, ...s.customRecipes].map(recipe => {
-        const override = s.images[recipe.id]
-        if (!override) return recipe
+        const edit = s.edits[recipe.id]
+        const photo = s.images[recipe.id]
+        if (!edit && !photo) return recipe
         return {
             ...recipe,
-            image_url: override.url,
-            image_is_stock: override.isStock,
-            image_attribution: override.attribution,
+            ...(edit ?? {}),
+            edited: !!edit,
+            ...(photo ? {
+                image_url: photo.url,
+                image_is_stock: photo.isStock,
+                image_attribution: photo.attribution,
+            } : {}),
         }
     })
-    structuralCache = { custom: s.customRecipes, images: s.images, value }
+    structuralCache = { custom: s.customRecipes, images: s.images, edits: s.edits, value }
     return value
 }
 

@@ -14,6 +14,8 @@ built to answer "what's for dinner" without cooking the same three chicken dishe
 - **suggest/swap**: ranked by what it's learned about you, filtered by protein or max cooking time, with liked recipes offered first
 - **generate something new**: describe protein/time/mood and the AI proposes a recipe (needs a key, see below)
 - **recipe library**: 511 recipes across ten dinner categories, filterable by protein, nutrition (under 500 kcal, 35g+ protein, low carb, low sugar) and status (liked, AI-made, custom, hidden). *Plan this* puts any recipe straight onto a day. Hide anything you never want to see, with 5 seconds to undo
+- **write your own**: a form next to *Generate*, needing only a name and one ingredient
+- **edit anything**, seeded recipes included. *Save changes* rewrites it in place, badged as modified with a button to put the original back; *Save as a copy* leaves the original alone and adds a duplicate that links back to it. Editing in place keeps the recipe's id, so the swipes and cooking history stay attached; a copy gets a new id and starts clean
 - **photos**: generated recipes borrow an openly-licensed photo of a similar dish — clearly badged as stock, credited, and rerollable. You can upload your own photo for any recipe, seeded ones included
 - **taste profile**: tell it ingredients you like or avoid, and see what it has worked out on its own
 - **grocery checklist**: open a day, tick off that meal's ingredients, state persists

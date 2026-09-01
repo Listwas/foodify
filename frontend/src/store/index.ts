@@ -11,8 +11,8 @@ import type { RecipeCandidate, RecipeFull, Stance, Verdict } from "../lib/types"
 import { iso } from "../lib/dates"
 import { load, migrate, save } from "./db"
 import {
-    emptyState, groceryKey, planKey,
-    type AppState, type ImageOverride, type PlanSlot,
+    emptyState, groceryKey, planKey, FIRST_LOCAL_ID,
+    type AppState, type ImageOverride, type PlanSlot, type RecipeEdit,
 } from "./types"
 
 const SAVE_DEBOUNCE_MS = 250
@@ -187,6 +187,7 @@ export function addRecipe(candidate: RecipeCandidate): RecipeFull {
         image_url: candidate.image_url,
         image_is_stock: candidate.image_is_stock ?? false,
         image_attribution: candidate.image_attribution ?? null,
+        copied_from: candidate.copied_from ?? null,
         verdict: null,
         shortlisted: false,
         ingredients: candidate.ingredients.map((ing, i) => ({
@@ -198,6 +199,40 @@ export function addRecipe(candidate: RecipeCandidate): RecipeFull {
     }
     update(s => ({ customRecipes: [...s.customRecipes, recipe], nextId: s.nextId + 1 }))
     return recipe
+}
+
+export const isLocalRecipe = (id: number) => id >= FIRST_LOCAL_ID
+
+/**
+ * Change a recipe in place.
+ *
+ * A recipe the user wrote is edited directly. A shipped one can't be, since
+ * recipes.json is replaced wholesale whenever the library is refreshed, so the
+ * change is kept as an override that `restoreRecipe` removes.
+ *
+ * Either way the id doesn't move, so the swipes and cooking history already
+ * attached to this recipe stay attached. It's the same dish, tweaked.
+ */
+export function editRecipe(recipeId: number, patch: RecipeEdit) {
+    update(s => {
+        if (isLocalRecipe(recipeId)) {
+            return {
+                customRecipes: s.customRecipes.map(r =>
+                    r.id === recipeId ? { ...r, ...patch } : r
+                ),
+            }
+        }
+        return { edits: { ...s.edits, [recipeId]: patch } }
+    })
+}
+
+/** Drop local changes and fall back to the shipped recipe. */
+export function restoreRecipe(recipeId: number) {
+    update(s => {
+        const edits = { ...s.edits }
+        delete edits[recipeId]
+        return { edits }
+    })
 }
 
 /** Replace any recipe's photo, seeded ones included. */

@@ -23,11 +23,30 @@ export interface Pref {
     hardFilter: boolean
 }
 
-/** A photo the user attached — either their own upload or a stock pick. */
+/** A photo the user attached, either their own upload or a stock pick. */
 export interface ImageOverride {
     url: string
     isStock: boolean
     attribution: string | null
+}
+
+/**
+ * Changes made to a shipped recipe.
+ *
+ * recipes.json is read-only and replaced wholesale whenever the library is
+ * refreshed, so edits live here instead, keyed by recipe id. Restoring the
+ * original is deleting the entry.
+ */
+export interface RecipeEdit {
+    title: string
+    protein_type: string | null
+    prep_time_minutes: number | null
+    instructions: string
+    calories: number | null
+    protein_g: number | null
+    carbs_g: number | null
+    sugar_g: number | null
+    ingredients: { id: number; name: string; quantity: string; unit: string }[]
 }
 
 /**
@@ -45,6 +64,7 @@ export interface AppState {
     grocery: Record<string, boolean>      // `${date}|${slot}|${ingredientId}`
     customRecipes: RecipeFull[]
     images: Record<number, ImageOverride> // recipeId
+    edits: Record<number, RecipeEdit>     // recipeId
     nextId: number
     nextPrefId: number
     nextSeq: number
@@ -64,6 +84,7 @@ export const emptyState = (): AppState => ({
     grocery: {},
     customRecipes: [],
     images: {},
+    edits: {},
     nextId: FIRST_LOCAL_ID,
     nextPrefId: 1,
     nextSeq: 1,

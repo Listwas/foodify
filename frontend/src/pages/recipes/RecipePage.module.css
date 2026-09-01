@@ -19,6 +19,39 @@
     gap: var(--s1);
 }
 
+.topActions {
+    display: flex;
+    gap: var(--s2);
+}
+
+/* Provenance, worn the same way a liked recipe wears its heart. */
+.marks {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    margin: var(--s2) 0;
+}
+
+.mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 650;
+}
+
+.mark a { color: inherit; }
+
+.restore {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+}
+
 .heroImgWrap {
     position: relative;
     flex-shrink: 0;

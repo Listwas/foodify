@@ -1,17 +1,22 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
-import { setImage } from "../../store"
-import { useRecipe } from "../../data/library"
+import { restoreRecipe, setImage } from "../../store"
+import { useToast } from "../../context/ToastContext"
+import { useRecipe, useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
 import PhotoPicker, { type PhotoChoice } from "../../components/PhotoPicker"
 import DayPickerModal from "../../components/DayPickerModal"
+import RecipeFormModal from "../../components/RecipeFormModal"
 import s from "./RecipePage.module.css"
 
 function RecipePage() {
     const { id } = useParams()
     const [planning, setPlanning] = useState(false)
+    const [editing, setEditing] = useState(false)
     const [editingPhoto, setEditingPhoto] = useState(false)
+    const { showToast } = useToast()
+    const recipes = useRecipeMap()
     const r = useRecipe(Number(id))
 
     if (!r) {
@@ -47,14 +52,24 @@ function RecipePage() {
                     <Icon name="left" size={15} />
                     Library
                 </Link>
-                <button
-                    className="btn primary"
-                    onClick={() => setPlanning(true)}
-                    data-tip="Add to a day on your plan"
-                >
-                    <Icon name="plus" size={16} />
-                    Plan this
-                </button>
+                <div className={s.topActions}>
+                    <button
+                        className="btn"
+                        onClick={() => setEditing(true)}
+                        data-tip="Change anything about this recipe"
+                    >
+                        <Icon name="edit" size={16} />
+                        Edit
+                    </button>
+                    <button
+                        className="btn primary"
+                        onClick={() => setPlanning(true)}
+                        data-tip="Add to a day on your plan"
+                    >
+                        <Icon name="plus" size={16} />
+                        Plan this
+                    </button>
+                </div>
             </div>
 
             <div className={s.hero}>
@@ -85,6 +100,38 @@ function RecipePage() {
 
                 <div className={s.heroBody}>
                     <h1>{r.title}</h1>
+                    {(r.edited || r.copied_from) && (
+                        <div className={s.marks}>
+                            {r.edited && (
+                                <>
+                                    <span className={s.mark}>
+                                        <Icon name="edit" size={12} />
+                                        modified
+                                    </span>
+                                    <button
+                                        className={`btn ghost ${s.restore}`}
+                                        onClick={() => {
+                                            restoreRecipe(r.id)
+                                            showToast("Original restored")
+                                        }}
+                                        data-tip="Undo every change and go back to the shipped recipe"
+                                    >
+                                        <Icon name="undo" size={14} />
+                                        Restore original
+                                    </button>
+                                </>
+                            )}
+                            {r.copied_from != null && (
+                                <span className={s.mark}>
+                                    <Icon name="plus" size={12} />
+                                    copy of{" "}
+                                    <Link to={`/recipe/${r.copied_from}`}>
+                                        {recipes.get(r.copied_from)?.title ?? "another recipe"}
+                                    </Link>
+                                </span>
+                            )}
+                        </div>
+                    )}
                     <div className={s.meta}>
                         {r.protein_type}
                         {r.prep_time_minutes != null && <> · {r.prep_time_minutes} min</>}
@@ -126,6 +173,7 @@ function RecipePage() {
                     onClose={() => setPlanning(false)}
                 />
             )}
+            {editing && <RecipeFormModal recipe={r} onClose={() => setEditing(false)} />}
         </div>
     )
 }

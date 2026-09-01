@@ -28,7 +28,8 @@ const NUTRITION: { key: string; label: string; test: (r: RecipeFull) => boolean 
 const STATUS: { key: string; label: string; test: (r: RecipeFull) => boolean }[] = [
     { key: "liked", label: "liked", test: r => r.verdict === "like" },
     { key: "ai", label: "AI-made", test: r => r.source === "ai" },
-    { key: "custom", label: "custom", test: r => r.source === "custom" },
+    { key: "custom", label: "yours", test: r => r.source === "custom" },
+    { key: "edited", label: "modified", test: r => !!r.edited || r.copied_from != null },
     { key: "hidden", label: "hidden", test: r => r.verdict === "hidden" },
 ]
 
@@ -275,11 +276,23 @@ function RecipeBrowse() {
                                         <Icon name={r.source === "ai" ? "sparkle" : "plate"} size={28} />
                                     </div>
                                 )}
-                                {r.verdict === "like" && (
-                                    <span className={s.liked} title="you liked this">
-                                        <Icon name="heart" size={13} filled />
-                                    </span>
-                                )}
+                                <div className={s.marks}>
+                                    {r.verdict === "like" && (
+                                        <span className={`${s.mark} ${s.liked}`} title="you liked this">
+                                            <Icon name="heart" size={13} filled />
+                                        </span>
+                                    )}
+                                    {r.edited && (
+                                        <span className={s.mark} title="you changed this recipe">
+                                            <Icon name="edit" size={13} />
+                                        </span>
+                                    )}
+                                    {r.copied_from != null && (
+                                        <span className={s.mark} title="a copy you made">
+                                            <Icon name="plus" size={13} />
+                                        </span>
+                                    )}
+                                </div>
                                 <div className={s.cardBody}>
                                     <div className={s.cardTitle}>{r.title}</div>
                                     <div className={s.cardMeta}>

@@ -178,15 +178,26 @@
     color: var(--text-dim);
 }
 
-.liked {
+.marks {
     position: absolute;
     top: var(--s2);
     right: var(--s2);
+    display: flex;
+    gap: 4px;
+}
+
+.mark {
     display: grid;
     place-items: center;
     width: 24px;
     height: 24px;
     border-radius: 50%;
+    background: var(--bg-0);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.liked {
     background: var(--accent);
     color: var(--accent-ink);
 }

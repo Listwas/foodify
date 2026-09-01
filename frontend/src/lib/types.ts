@@ -13,6 +13,10 @@ export interface RecipeBrief {
   image_attribution: string | null
   verdict: Verdict | null
   shortlisted: boolean
+  /** carries local changes to a shipped recipe; restoring clears it */
+  edited?: boolean
+  /** set on a recipe saved as a copy of another, so the card can say so */
+  copied_from?: number | null
 }
 
 /** An openly-licensed photo of a *similar* dish, for recipes with no image. */
@@ -66,6 +70,7 @@ export interface RecipeCandidate {
   image_url: string | null
   image_is_stock?: boolean
   image_attribution?: string | null
+  copied_from?: number | null
   ingredients: { name: string; quantity: string; unit: string }[]
 }
 

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react"
-import type { RecipeCandidate } from "../lib/types"
+import type { RecipeCandidate, RecipeFull } from "../lib/types"
+import type { RecipeEdit } from "../store/types"
 import { useToast } from "../context/ToastContext"
-import { addRecipe, assign } from "../store"
+import { addRecipe, assign, editRecipe } from "../store"
 import { useProteinTypes } from "../data/library"
 import Icon from "./Icon"
 import Modal from "./Modal"
@@ -9,12 +10,16 @@ import PhotoPicker, { type PhotoChoice } from "./PhotoPicker"
 import s from "./RecipeFormModal.module.css"
 
 interface Props {
-    /** when set, the saved recipe goes straight onto this day */
+    /** when set, the form edits this recipe instead of creating one */
+    recipe?: RecipeFull
+    /** when set, a newly created recipe goes straight onto this day */
     date?: string
     onClose: () => void
 }
 
 interface Row {
+    /** kept from the original where possible, so ticked groceries survive an edit */
+    id?: number
     name: string
     quantity: string
     unit: string
@@ -27,26 +32,47 @@ const num = (v: string) => {
     const n = Number(v)
     return v.trim() === "" || Number.isNaN(n) ? null : n
 }
+const str = (v: number | null | undefined) => (v == null ? "" : String(v))
 
 /**
- * Write down a recipe of your own.
+ * Write down a recipe of your own, or change one that's already here.
  *
  * Only a title and one ingredient are required. Everything else is optional and
  * stays out of the way until asked for, because most of the time somebody is
  * copying a dish they already know rather than filling in a database record.
  */
-function RecipeFormModal({ date, onClose }: Props) {
+function RecipeFormModal({ recipe, date, onClose }: Props) {
     const { showToast } = useToast()
     const proteins = useProteinTypes()
+    const editing = !!recipe
 
-    const [title, setTitle] = useState("")
-    const [protein, setProtein] = useState("")
-    const [time, setTime] = useState("")
-    const [instructions, setInstructions] = useState("")
-    const [rows, setRows] = useState<Row[]>([emptyRow(), emptyRow(), emptyRow()])
-    const [photo, setPhoto] = useState<PhotoChoice>(NO_PHOTO)
-    const [showNutrition, setShowNutrition] = useState(false)
-    const [macros, setMacros] = useState({ calories: "", protein_g: "", carbs_g: "", sugar_g: "" })
+    const [title, setTitle] = useState(recipe?.title ?? "")
+    const [protein, setProtein] = useState(recipe?.protein_type ?? "")
+    const [time, setTime] = useState(str(recipe?.prep_time_minutes))
+    const [instructions, setInstructions] = useState(recipe?.instructions ?? "")
+    const [rows, setRows] = useState<Row[]>(() =>
+        recipe?.ingredients.length
+            ? recipe.ingredients.map(i => ({ id: i.id, name: i.name, quantity: i.quantity, unit: i.unit }))
+            : [emptyRow(), emptyRow(), emptyRow()]
+    )
+    const [photo, setPhoto] = useState<PhotoChoice>(
+        recipe
+            ? {
+                image_url: recipe.image_url,
+                image_is_stock: !!recipe.image_is_stock,
+                image_attribution: recipe.image_attribution ?? null,
+            }
+            : NO_PHOTO
+    )
+    const [showNutrition, setShowNutrition] = useState(
+        !!recipe && recipe.calories != null
+    )
+    const [macros, setMacros] = useState({
+        calories: str(recipe?.calories),
+        protein_g: str(recipe?.protein_g),
+        carbs_g: str(recipe?.carbs_g),
+        sugar_g: str(recipe?.sugar_g),
+    })
     const [touched, setTouched] = useState(false)
     const lastRow = useRef<HTMLInputElement>(null)
 
@@ -59,45 +85,71 @@ function RecipeFormModal({ date, onClose }: Props) {
 
     const addRow = () => {
         setRows(rs => [...rs, emptyRow()])
-        // focus lands on the new field after it renders
         requestAnimationFrame(() => lastRow.current?.focus())
     }
 
     const removeRow = (i: number) =>
         setRows(rs => (rs.length === 1 ? [emptyRow()] : rs.filter((_, j) => j !== i)))
 
-    const save = () => {
-        setTouched(true)
-        if (!title.trim() || filled.length === 0) return
+    /** New rows get ids above anything this recipe already uses. */
+    const numberedIngredients = () => {
+        let next = Math.max(0, ...rows.map(r => r.id ?? 0)) + 1
+        return filled.map(r => ({
+            id: r.id ?? next++,
+            name: r.name.trim(),
+            quantity: r.quantity.trim(),
+            unit: r.unit.trim(),
+        }))
+    }
 
+    const common = () => ({
+        title: title.trim(),
+        protein_type: protein.trim() || null,
+        prep_time_minutes: num(time),
+        instructions: instructions.trim(),
+        calories: num(macros.calories),
+        protein_g: num(macros.protein_g),
+        carbs_g: num(macros.carbs_g),
+        sugar_g: num(macros.sugar_g),
+    })
+
+    const valid = () => {
+        setTouched(true)
+        return !!title.trim() && filled.length > 0
+    }
+
+    const saveNew = (copiedFrom: number | null) => {
+        if (!valid()) return
         const candidate: RecipeCandidate = {
-            title: title.trim(),
+            ...common(),
             source: "custom",
-            protein_type: protein || null,
-            prep_time_minutes: num(time),
-            instructions: instructions.trim(),
-            calories: num(macros.calories),
-            protein_g: num(macros.protein_g),
-            carbs_g: num(macros.carbs_g),
-            sugar_g: num(macros.sugar_g),
             image_url: photo.image_url,
             image_is_stock: photo.image_is_stock,
             image_attribution: photo.image_attribution,
-            ingredients: filled.map(r => ({
-                name: r.name.trim(),
-                quantity: r.quantity.trim(),
-                unit: r.unit.trim(),
-            })),
+            copied_from: copiedFrom,
+            ingredients: numberedIngredients().map(({ name, quantity, unit }) =>
+                ({ name, quantity, unit })),
         }
-
         const saved = addRecipe(candidate)
         if (date) assign(saved.id, date)
-        showToast(date ? `Planned: ${saved.title}` : `Saved: ${saved.title}`)
+        showToast(
+            copiedFrom ? `Copied: ${saved.title}`
+                : date ? `Planned: ${saved.title}`
+                    : `Saved: ${saved.title}`
+        )
+        onClose()
+    }
+
+    const saveChanges = () => {
+        if (!recipe || !valid()) return
+        const patch: RecipeEdit = { ...common(), ingredients: numberedIngredients() }
+        editRecipe(recipe.id, patch)
+        showToast(`Updated: ${patch.title}`)
         onClose()
     }
 
     return (
-        <Modal title="Add your own recipe" onClose={onClose}>
+        <Modal title={editing ? "Edit recipe" : "Add your own recipe"} onClose={onClose}>
             <div className={s.form}>
                 <label className={s.field}>
                     <span className={s.label}>Name</span>
@@ -248,9 +300,26 @@ function RecipeFormModal({ date, onClose }: Props) {
                 )}
 
                 <div className={s.actions}>
-                    <button type="button" className="btn primary" onClick={save}>
-                        {date ? "Save & plan it" : "Save to library"}
-                    </button>
+                    {editing ? (
+                        <>
+                            <button type="button" className="btn primary" onClick={saveChanges}>
+                                Save changes
+                            </button>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => saveNew(recipe!.id)}
+                                data-tip="Keeps the original as it was"
+                            >
+                                <Icon name="plus" size={15} />
+                                Save as a copy
+                            </button>
+                        </>
+                    ) : (
+                        <button type="button" className="btn primary" onClick={() => saveNew(null)}>
+                            {date ? "Save & plan it" : "Save to library"}
+                        </button>
+                    )}
                     <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
                 </div>
             </div>
