@@ -226,7 +226,7 @@ function RecipeBrowse() {
 
             {results.length === 0 && (
                 <p className={s.empty}>
-                    {showHidden ? "Nothing hidden yet." : "Nothing matches — try a different search."}
+                    {showHidden ? "Nothing hidden yet." : "Nothing matches. Try a different search."}
                 </p>
             )}
 

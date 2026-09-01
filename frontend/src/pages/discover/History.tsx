@@ -53,7 +53,7 @@ function History() {
 
     const reset = (id: number) => {
         clearFeedback(id)
-        showToast("Reset — it'll come back around")
+        showToast("Reset, it'll come back around")
     }
 
     return (
@@ -64,7 +64,7 @@ function History() {
             </Link>
             <h1>Swipe history</h1>
             <p className={s.blurb}>
-                Nothing here is permanent. Change your mind whenever you like — and anything you
+                Nothing here is permanent. Change your mind whenever you like, and anything you
                 passed on drifts back into the deck after a few months on its own.
             </p>
 

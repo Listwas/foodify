@@ -110,7 +110,7 @@ function Settings() {
                 <div>
                     <div className={s.settingName}>Your data</div>
                     <div className={s.settingNote}>
-                        Everything lives in this browser — nothing is uploaded anywhere. A backup
+                        Everything lives in this browser. Nothing is uploaded anywhere. A backup
                         file is also the only way to move your plan to another device.
                     </div>
                 </div>
@@ -163,8 +163,8 @@ function Profile() {
         <div className="page">
             <h1>Your taste</h1>
             <p className={s.blurb}>
-                Tell the app what you like and it'll weight suggestions accordingly — everywhere,
-                not just here.
+                Tell the app what you like and it'll weight suggestions accordingly, everywhere
+                in the app and not just here.
             </p>
 
             <div className={s.columns}>
@@ -206,7 +206,7 @@ function Profile() {
                 <h2>What the app has learned</h2>
                 {!taste.has_signal ? (
                     <p className={s.none}>
-                        Nothing yet — swipe a few recipes in Discover and this fills in.
+                        Nothing yet. Swipe a few recipes in Discover and this fills in.
                     </p>
                 ) : (
                     <>

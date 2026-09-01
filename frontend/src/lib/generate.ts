@@ -11,7 +11,7 @@
 import type { RecipeCandidate } from "./types"
 
 export const AI_OFF =
-    "Recipe generation is off — this copy has no AI key configured. Everything else works."
+    "Recipe generation is off. This copy has no AI key configured, everything else works."
 
 export class GenerateUnavailable extends Error {
     constructor(message = AI_OFF) {
@@ -35,7 +35,7 @@ export async function generateRecipe(body: GenerateRequest): Promise<RecipeCandi
             body: JSON.stringify(body),
         })
     } catch {
-        throw new GenerateUnavailable("Couldn't reach the generator — are you offline?")
+        throw new GenerateUnavailable("Couldn't reach the generator. Are you offline?")
     }
 
     // 404 means the function isn't deployed at all; 501 is it telling us the

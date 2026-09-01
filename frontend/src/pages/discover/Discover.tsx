@@ -205,7 +205,7 @@ function Discover() {
                     onClick={() => commit("left")}
                     disabled={!top}
                     aria-label="pass"
-                    data-tip="Pass — not right now"
+                    data-tip="Pass, not right now"
                 >
                     <Icon name="close" size={22} />
                 </button>
@@ -214,7 +214,7 @@ function Discover() {
                     onClick={() => commit("down")}
                     disabled={!top}
                     aria-label="hide"
-                    data-tip="Hide — never show me this"
+                    data-tip="Hide, never show me this"
                 >
                     <Icon name="ban" size={19} />
                 </button>
@@ -231,7 +231,7 @@ function Discover() {
                     onClick={() => commit("right")}
                     disabled={!top}
                     aria-label="like"
-                    data-tip="Like — add to your list"
+                    data-tip="Like, add to your list"
                 >
                     <Icon name="heart" size={22} filled />
                 </button>

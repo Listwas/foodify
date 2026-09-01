@@ -176,7 +176,7 @@ function WeekView() {
                                                 onClick={() => cook(dateIso, !entry.cooked)}
                                                 aria-pressed={entry.cooked}
                                                 aria-label={entry.cooked ? "mark as not cooked" : "mark as cooked"}
-                                                data-tip={entry.cooked ? "Cooked — tap to undo" : "Mark as cooked"}
+                                                data-tip={entry.cooked ? "Cooked, tap to undo" : "Mark as cooked"}
                                             >
                                                 <Icon name="check" />
                                             </button>
