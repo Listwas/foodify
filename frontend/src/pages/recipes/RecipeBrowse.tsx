@@ -9,6 +9,7 @@ import { useIndex, useSignals } from "../../data/taste"
 import { rank } from "../../engine"
 import Icon from "../../components/Icon"
 import GenerateModal from "../../components/GenerateModal"
+import RecipeFormModal from "../../components/RecipeFormModal"
 import DayPickerModal from "../../components/DayPickerModal"
 import s from "./RecipeBrowse.module.css"
 
@@ -39,6 +40,7 @@ function RecipeBrowse() {
     const [showFilters, setShowFilters] = useState(false)
     const [shown, setShown] = useState(PAGE)
     const [showGenerate, setShowGenerate] = useState(false)
+    const [showForm, setShowForm] = useState(false)
     const [planning, setPlanning] = useState<{ id: number; title: string } | null>(null)
     // recipes mid-countdown: id -> when the undo window closes
     const [pending, setPending] = useState<Record<number, number>>({})
@@ -172,10 +174,16 @@ function RecipeBrowse() {
         <div className="page">
             <div className="page-head">
                 <h1>{showHidden ? "Hidden recipes" : "Recipe library"}</h1>
-                <button className="btn primary" onClick={() => setShowGenerate(true)}>
-                    <Icon name="sparkle" size={16} />
-                    Generate new
-                </button>
+                <div className={s.headActions}>
+                    <button className="btn primary" onClick={() => setShowForm(true)}>
+                        <Icon name="plus" size={16} />
+                        Add your own
+                    </button>
+                    <button className="btn" onClick={() => setShowGenerate(true)}>
+                        <Icon name="sparkle" size={16} />
+                        Generate
+                    </button>
+                </div>
             </div>
 
             <div className={s.toolbar}>
@@ -320,6 +328,7 @@ function RecipeBrowse() {
             {shown < results.length && <div ref={sentinel} className={s.sentinel} />}
 
             {showGenerate && <GenerateModal onClose={() => setShowGenerate(false)} />}
+            {showForm && <RecipeFormModal onClose={() => setShowForm(false)} />}
             {planning && (
                 <DayPickerModal
                     recipeId={planning.id}

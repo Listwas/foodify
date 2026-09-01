@@ -291,6 +291,18 @@
 
 .cell:hover .cellAdd { color: var(--accent); }
 
+/* A week is seven rows, and a week that needs scrolling defeats the point of
+   seeing the week. On a short laptop screen the rows tighten instead. */
+@media (max-height: 700px) {
+    .agenda { gap: var(--s1); }
+    .row { min-height: 54px; padding: 4px var(--s2); }
+    .rowEmpty { min-height: 42px; }
+    .thumb { width: 42px; }
+    .rowTitle { -webkit-line-clamp: 1; line-clamp: 1; }
+    .dayNum { font-size: 1.1rem; }
+    .weekday { font-size: 0.6rem; }
+}
+
 @media (max-width: 720px) {
     .headerRight { width: 100%; justify-content: space-between; }
     .cell { min-height: 62px; }

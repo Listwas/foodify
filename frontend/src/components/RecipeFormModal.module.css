@@ -1,0 +1,100 @@
+.form {
+    display: grid;
+    gap: var(--s4);
+}
+
+.field {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.label {
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.pair {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: var(--s3);
+}
+
+.error {
+    font-size: 0.78rem;
+    color: var(--danger);
+}
+
+/* --- ingredient rows -------------------------------------------------- */
+
+.rows {
+    display: grid;
+    gap: var(--s2);
+}
+
+/* quantity and unit stay narrow so the name, the part that matters, gets the
+   room; the delete button never wraps onto its own line */
+.row {
+    display: grid;
+    grid-template-columns: 72px 76px 1fr 36px;
+    gap: var(--s2);
+    align-items: center;
+}
+
+.qty, .unit, .name { min-width: 0; }
+
+.drop { color: var(--text-dim); }
+.drop:hover { color: var(--danger); }
+
+.addRow {
+    justify-self: start;
+    margin-top: var(--s1);
+    padding-left: 0;
+}
+
+.steps {
+    resize: vertical;
+    min-height: 96px;
+    line-height: 1.5;
+}
+
+.preview {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: var(--r2);
+    margin-bottom: var(--s2);
+}
+
+.toggle {
+    justify-self: start;
+    padding-left: 0;
+}
+
+.macros {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s3);
+}
+
+.actions {
+    display: flex;
+    gap: var(--s2);
+    position: sticky;
+    bottom: 0;
+    padding-top: var(--s3);
+    margin-top: var(--s1);
+    background: linear-gradient(to top, var(--bg-5) 72%, transparent);
+}
+
+.actions .btn { flex: none; }
+
+@media (max-width: 560px) {
+    .row { grid-template-columns: 62px 62px 1fr 34px; }
+    .macros { grid-template-columns: repeat(2, 1fr); }
+    .pair { grid-template-columns: 1fr 92px; }
+}

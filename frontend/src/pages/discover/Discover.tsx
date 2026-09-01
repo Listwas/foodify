@@ -162,7 +162,7 @@ function Discover() {
     const top = queue[0]
 
     return (
-        <div className="page">
+        <div className={`page ${s.page}`}>
             <div className="page-head">
                 <h1>Discover</h1>
                 <div className={s.headerRight}>
