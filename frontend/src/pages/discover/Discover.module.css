@@ -132,12 +132,19 @@
 }
 .empty p { margin: 0; }
 
+/* The row sits directly under the card stack, and the cards are positioned
+   with a z-index. Without a stacking position of its own, a hover label drawn
+   above a button lands *behind* the card and becomes unreadable. */
 .controls {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 14px;
-    margin-top: 20px;
+    /* clearance for the hover label, which is drawn ~30px above a button —
+       at 20px it sat on the photo */
+    margin-top: 38px;
+    position: relative;
+    z-index: 20;
 }
 
 .action {
@@ -154,7 +161,10 @@
     justify-content: center;
     transition: transform 0.12s ease, border-color 0.12s ease;
 }
-.action:hover:not(:disabled) { transform: translateY(-2px); }
+/* `transform` opens a stacking context, which would trap the label's z-index
+   inside the button. Lifting the hovered button itself keeps its label above
+   the neighbouring buttons too. */
+.action:hover:not(:disabled) { transform: translateY(-2px); position: relative; z-index: 1; }
 .action:disabled { opacity: 0.35; cursor: default; }
 
 .pass:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
