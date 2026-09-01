@@ -28,6 +28,14 @@
     gap: var(--s2);
 }
 
+.likedBtn {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.likedBtn:hover { background: var(--accent-soft); }
+
 /* Provenance, worn the same way a liked recipe wears its heart. */
 .marks {
     display: flex;

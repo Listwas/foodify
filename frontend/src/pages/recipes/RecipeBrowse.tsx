@@ -325,6 +325,24 @@ function RecipeBrowse() {
                                 ) : (
                                     <>
                                         <button
+                                            className={`${s.cardBtn} ${s.iconOnly} ${r.verdict === "like" ? s.likeOn : ""}`}
+                                            onClick={() => {
+                                                if (r.verdict === "like") {
+                                                    clearFeedback(r.id)
+                                                    showToast("Removed from your likes")
+                                                } else {
+                                                    setFeedback(r.id, "like")
+                                                    showToast("Liked")
+                                                }
+                                            }}
+                                            aria-pressed={r.verdict === "like"}
+                                            aria-label={r.verdict === "like" ? "remove your like" : "like this recipe"}
+                                            data-tip={r.verdict === "like" ? "Remove your like" : "Like this"}
+                                            data-tip-below
+                                        >
+                                            <Icon name="heart" size={15} filled={r.verdict === "like"} />
+                                        </button>
+                                        <button
                                             className={`${s.cardBtn} ${s.planBtn}`}
                                             onClick={() => setPlanning({ id: r.id, title: r.title })}
                                             data-tip="Add to a day on your plan"

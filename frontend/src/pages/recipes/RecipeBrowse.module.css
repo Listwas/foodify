@@ -271,6 +271,9 @@
 .iconOnly { flex: none; width: 42px; }
 .iconOnly:hover { color: var(--danger); }
 
+.likeOn { color: var(--accent); }
+.likeOn:hover { color: var(--accent); }
+
 /* --- the five-second window to take a hide back ----------------------- */
 
 .hiddenCard {

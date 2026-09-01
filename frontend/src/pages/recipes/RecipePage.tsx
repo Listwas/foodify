@@ -36,6 +36,7 @@ function RecipePage() {
     }
 
     const hidden = r.verdict === "hidden"
+    const liked = r.verdict === "like"
     const img = mealImage(r.image_url, "hero")
     const photo: PhotoChoice = {
         image_url: r.image_url,
@@ -58,6 +59,26 @@ function RecipePage() {
                     Library
                 </Link>
                 <div className={s.topActions}>
+                    <button
+                        className={`btn ${liked ? s.likedBtn : ""}`}
+                        onClick={() => {
+                            if (liked) {
+                                clearFeedback(r.id)
+                                showToast("Removed from your likes")
+                            } else {
+                                setFeedback(r.id, "like")
+                                showToast("Liked. It'll come up more often.")
+                            }
+                        }}
+                        aria-pressed={liked}
+                        data-tip={liked
+                            ? "Remove your like"
+                            : "Tells the app to suggest this sort of thing more"}
+                        data-tip-below
+                    >
+                        <Icon name="heart" size={16} filled={liked} />
+                        {liked ? "Liked" : "Like"}
+                    </button>
                     <button
                         className="btn"
                         onClick={() => setEditing(true)}
