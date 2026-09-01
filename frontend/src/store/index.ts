@@ -226,6 +226,44 @@ export function editRecipe(recipeId: number, patch: RecipeEdit) {
     })
 }
 
+/**
+ * Delete a recipe the user created, along with everything pointing at it.
+ *
+ * Only local recipes can go: a shipped one isn't ours to remove, and hiding is
+ * what that case is for. Leaving a plan entry or a swipe behind would strand a
+ * reference to an id that no longer resolves, so they go too.
+ */
+export function deleteRecipe(recipeId: number) {
+    if (!isLocalRecipe(recipeId)) return
+    update(s => {
+        const goneDays = new Set(
+            Object.entries(s.plan)
+                .filter(([, slot]) => slot.recipeId === recipeId)
+                .map(([key]) => key)
+        )
+        const feedback = { ...s.feedback }
+        delete feedback[recipeId]
+        const images = { ...s.images }
+        delete images[recipeId]
+        const edits = { ...s.edits }
+        delete edits[recipeId]
+        return {
+            customRecipes: s.customRecipes.filter(r => r.id !== recipeId),
+            plan: Object.fromEntries(
+                Object.entries(s.plan).filter(([key]) => !goneDays.has(key))
+            ),
+            grocery: Object.fromEntries(
+                Object.entries(s.grocery).filter(
+                    ([key]) => ![...goneDays].some(day => key.startsWith(`${day}|`))
+                )
+            ),
+            feedback,
+            images,
+            edits,
+        }
+    })
+}
+
 /** Drop local changes and fall back to the shipped recipe. */
 export function restoreRecipe(recipeId: number) {
     update(s => {

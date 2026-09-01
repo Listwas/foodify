@@ -278,18 +278,27 @@ function RecipeBrowse() {
                                 )}
                                 <div className={s.marks}>
                                     {r.verdict === "like" && (
-                                        <span className={`${s.mark} ${s.liked}`} title="you liked this">
-                                            <Icon name="heart" size={13} filled />
+                                        <span className={`${s.mark} ${s.liked}`}>
+                                            <Icon name="heart" size={11} filled />
+                                            Liked
                                         </span>
                                     )}
                                     {r.edited && (
-                                        <span className={s.mark} title="you changed this recipe">
-                                            <Icon name="edit" size={13} />
+                                        <span className={s.mark}>
+                                            <Icon name="edit" size={11} />
+                                            Edited
                                         </span>
                                     )}
                                     {r.copied_from != null && (
-                                        <span className={s.mark} title="a copy you made">
-                                            <Icon name="plus" size={13} />
+                                        <span className={s.mark}>
+                                            <Icon name="plus" size={11} />
+                                            Copy
+                                        </span>
+                                    )}
+                                    {r.source === "custom" && r.copied_from == null && (
+                                        <span className={s.mark}>
+                                            <Icon name="edit" size={11} />
+                                            Yours
                                         </span>
                                     )}
                                 </div>
@@ -308,6 +317,7 @@ function RecipeBrowse() {
                                         className={s.cardBtn}
                                         onClick={() => { clearFeedback(r.id); showToast("Unhidden") }}
                                         data-tip="Put it back in the library"
+                                        data-tip-below
                                     >
                                         <Icon name="undo" size={15} />
                                         Unhide
@@ -318,6 +328,7 @@ function RecipeBrowse() {
                                             className={`${s.cardBtn} ${s.planBtn}`}
                                             onClick={() => setPlanning({ id: r.id, title: r.title })}
                                             data-tip="Add to a day on your plan"
+                                            data-tip-below
                                         >
                                             <Icon name="plus" size={15} />
                                             Plan this
@@ -327,6 +338,7 @@ function RecipeBrowse() {
                                             onClick={() => hide(r.id)}
                                             aria-label="hide this recipe"
                                             data-tip="Never show me this"
+                                            data-tip-below
                                         >
                                             <Icon name="ban" size={15} />
                                         </button>

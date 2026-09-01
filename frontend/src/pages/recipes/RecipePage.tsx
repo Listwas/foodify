@@ -1,7 +1,9 @@
 import { useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
-import { restoreRecipe, setImage } from "../../store"
+import {
+    clearFeedback, deleteRecipe, isLocalRecipe, restoreRecipe, setFeedback, setImage,
+} from "../../store"
 import { useToast } from "../../context/ToastContext"
 import { useRecipe, useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
@@ -15,6 +17,8 @@ function RecipePage() {
     const [planning, setPlanning] = useState(false)
     const [editing, setEditing] = useState(false)
     const [editingPhoto, setEditingPhoto] = useState(false)
+    const [confirmDelete, setConfirmDelete] = useState(false)
+    const navigate = useNavigate()
     const { showToast } = useToast()
     const recipes = useRecipeMap()
     const r = useRecipe(Number(id))
@@ -31,6 +35,7 @@ function RecipePage() {
         )
     }
 
+    const hidden = r.verdict === "hidden"
     const img = mealImage(r.image_url, "hero")
     const photo: PhotoChoice = {
         image_url: r.image_url,
@@ -57,9 +62,29 @@ function RecipePage() {
                         className="btn"
                         onClick={() => setEditing(true)}
                         data-tip="Change anything about this recipe"
+                        data-tip-below
                     >
                         <Icon name="edit" size={16} />
                         Edit
+                    </button>
+                    <button
+                        className="btn"
+                        onClick={() => {
+                            if (hidden) {
+                                clearFeedback(r.id)
+                                showToast("Back in the library")
+                            } else {
+                                setFeedback(r.id, "hidden")
+                                showToast("Hidden. It won't be suggested again.")
+                            }
+                        }}
+                        data-tip={hidden
+                            ? "Put it back in the library"
+                            : "Keep it out of the library and the deck"}
+                        data-tip-below
+                    >
+                        <Icon name={hidden ? "undo" : "ban"} size={16} />
+                        {hidden ? "Unhide" : "Hide"}
                     </button>
                     <button
                         className="btn primary"
@@ -100,8 +125,14 @@ function RecipePage() {
 
                 <div className={s.heroBody}>
                     <h1>{r.title}</h1>
-                    {(r.edited || r.copied_from) && (
+                    {(r.edited || r.copied_from || hidden) && (
                         <div className={s.marks}>
+                            {hidden && (
+                                <span className={`${s.mark} ${s.markHidden}`}>
+                                    <Icon name="ban" size={12} />
+                                    hidden
+                                </span>
+                            )}
                             {r.edited && (
                                 <>
                                     <span className={s.mark}>
@@ -165,6 +196,40 @@ function RecipePage() {
                     <div className={s.instructions}>{r.instructions || "No instructions recorded."}</div>
                 </section>
             </div>
+
+            {isLocalRecipe(r.id) && (
+                <div className={s.danger}>
+                    {confirmDelete ? (
+                        <>
+                            <span className={s.dangerText}>
+                                Delete <strong>{r.title}</strong> for good? This can't be undone.
+                            </span>
+                            <button
+                                className="btn danger"
+                                onClick={() => {
+                                    const name = r.title
+                                    deleteRecipe(r.id)
+                                    showToast(`Deleted: ${name}`)
+                                    navigate("/recipes")
+                                }}
+                            >
+                                Yes, delete it
+                            </button>
+                            <button className="btn ghost" onClick={() => setConfirmDelete(false)}>
+                                Keep it
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            className={`btn ghost ${s.deleteBtn}`}
+                            onClick={() => setConfirmDelete(true)}
+                        >
+                            <Icon name="close" size={15} />
+                            Delete this recipe
+                        </button>
+                    )}
+                </div>
+            )}
 
             {planning && (
                 <DayPickerModal

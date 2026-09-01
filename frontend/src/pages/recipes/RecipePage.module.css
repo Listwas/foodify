@@ -1,8 +1,11 @@
+/* three actions plus the back link is a lot for a narrow phone, so the row is
+   allowed to break rather than run off the edge */
 .topBar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: var(--s2) var(--s3);
     margin-bottom: 14px;
 }
 
@@ -21,6 +24,7 @@
 
 .topActions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--s2);
 }
 
@@ -47,10 +51,39 @@
 
 .mark a { color: inherit; }
 
+.markHidden {
+    background: hsla(0, 70%, 58%, 0.14);
+    color: var(--danger);
+}
+
 .restore {
     padding: 3px 8px;
     font-size: 0.75rem;
 }
+
+/* Kept away from the everyday actions and behind a confirmation, because
+   unlike hiding, this one really is gone. */
+.danger {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    margin-top: var(--s6);
+    padding-top: var(--s4);
+    border-top: 1px solid var(--bg-10);
+}
+
+.dangerText {
+    flex: 1;
+    min-width: 220px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+}
+
+.dangerText strong { color: var(--text); }
+
+.deleteBtn { color: var(--text-dim); }
+.deleteBtn:hover { color: var(--danger); }
 
 .heroImgWrap {
     position: relative;

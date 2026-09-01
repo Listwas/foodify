@@ -144,6 +144,9 @@
     gap: var(--s3);
 }
 
+/* No `overflow: hidden` here: it clipped the hover labels on the action row and
+   left them unreadable. The corners are rounded on the pieces that touch the
+   edges instead. */
 .card {
     position: relative;
     display: flex;
@@ -151,10 +154,12 @@
     background: var(--bg-5);
     border: 1px solid var(--bg-10);
     border-radius: var(--r2);
-    overflow: hidden;
 }
 
 .card:hover { border-color: var(--bg-20); }
+
+/* lifts the hovered card so its label is drawn over its neighbours */
+.card:hover { z-index: 5; }
 
 .cardLink {
     display: block;
@@ -169,6 +174,7 @@
     aspect-ratio: 1 / 1;
     object-fit: cover;
     display: block;
+    border-radius: calc(var(--r2) - 1px) calc(var(--r2) - 1px) 0 0;
 }
 
 .imgPlaceholder {
@@ -178,23 +184,33 @@
     color: var(--text-dim);
 }
 
+/* Named, not just drawn: an icon on its own leaves people guessing what the
+   badge means. */
 .marks {
     position: absolute;
     top: var(--s2);
     right: var(--s2);
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 4px;
+    max-width: calc(100% - var(--s4));
 }
 
 .mark {
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
     background: var(--bg-0);
     color: var(--text);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
 }
 
 .liked {
@@ -225,11 +241,16 @@
     text-transform: capitalize;
 }
 
+/* Deliberately not `overflow: hidden` — that is what clipped the hover labels.
+   The buttons round their own outer corners instead. */
 .cardActions {
     display: flex;
     gap: 1px;
     border-top: 1px solid var(--bg-10);
 }
+
+.cardActions > *:first-child { border-bottom-left-radius: calc(var(--r2) - 1px); }
+.cardActions > *:last-child { border-bottom-right-radius: calc(var(--r2) - 1px); }
 
 .cardBtn {
     display: flex;
@@ -253,6 +274,7 @@
 /* --- the five-second window to take a hide back ----------------------- */
 
 .hiddenCard {
+    overflow: hidden;
     display: grid;
     justify-items: center;
     align-content: center;
