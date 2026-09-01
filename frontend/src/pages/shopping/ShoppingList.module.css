@@ -139,27 +139,110 @@
     padding: 0;
 }
 
-/* Generous hit area: this is tapped with one thumb, holding a basket. */
 .row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 4px;
     border-radius: 6px;
+}
+
+.row:hover { background: var(--bg-10); }
+
+/* Generous hit area: this is tapped with one thumb, holding a basket. */
+.rowLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    padding: 9px 4px;
     cursor: pointer;
     font-size: 0.92rem;
     line-height: 1.35;
 }
 
-.row:hover { background: var(--bg-10); }
-
-.row input {
+.rowLabel input {
     accent-color: var(--accent);
     width: 18px;
     height: 18px;
     flex-shrink: 0;
     cursor: pointer;
 }
+
+/* Out of the way until wanted. There is no hover on a phone, so there they
+   are simply always there. */
+.rowActions {
+    display: flex;
+    gap: 2px;
+    flex: none;
+    padding-right: 2px;
+}
+
+.rowBtn {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+}
+
+.rowBtn:hover { background: var(--bg-20); color: var(--text); }
+
+@media (hover: hover) {
+    .rowActions { opacity: 0; transition: opacity 0.12s ease; }
+    .row:hover .rowActions,
+    .rowActions:focus-within { opacity: 1; }
+}
+
+/* On a phone there is no hover to reveal them, so they are always there, and
+   a permanently visible delete sitting 2px from the tick is a mis-tap waiting
+   to happen. Bigger targets, and daylight between them and the checkbox. */
+@media (hover: none) {
+    .rowActions { gap: var(--s1); padding-left: var(--s2); }
+    .rowBtn { width: 34px; height: 34px; }
+}
+
+/* --- adding and editing your own ---------------------------------------- */
+
+.add {
+    position: relative;
+    display: flex;
+    gap: var(--s2);
+    margin-bottom: var(--s4);
+}
+
+.addIcon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+}
+
+/* out-ranks `input.field`, whose padding shorthand would undo this */
+.add input.addInput {
+    flex: 1;
+    min-width: 0;
+    padding-left: 36px;
+}
+
+.editRow {
+    display: flex;
+    align-items: center;
+    gap: var(--s1);
+    padding: 4px 0;
+}
+
+.editRow input.editInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.editRow .btn { padding: 8px 10px; }
 
 .name {
     flex: 1;
@@ -222,6 +305,55 @@
     flex: none;
     min-width: 68px;
     color: var(--text);
+}
+
+/* --- taken off the list -------------------------------------------------- */
+
+/* Dropping a line is meant to be reversible and visibly so, otherwise it is
+   indistinguishable from the app losing something. */
+.droppedBox {
+    margin-top: var(--s5);
+    padding-top: var(--s3);
+    border-top: 1px dashed var(--bg-20);
+}
+
+.droppedHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    margin-bottom: var(--s2);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.droppedChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s2);
+}
+
+.droppedChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border: 1px dashed var(--bg-20);
+    border-radius: 999px;
+    background: none;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.droppedChip:hover {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 /* --- nothing to buy ----------------------------------------------------- */

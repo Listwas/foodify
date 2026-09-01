@@ -67,6 +67,23 @@ export interface RecipeEdit {
 }
 
 /**
+ * Something put on a week's shopping list by hand.
+ *
+ * Bin bags and coffee are never going to come out of a recipe, and a list you
+ * can't add to is one you end up rewriting on paper. Scoped to a week, like
+ * the list itself: next week starts clean.
+ */
+export interface ShoppingExtra {
+    id: number
+    /** The Monday of the list this belongs to. */
+    week: string
+    name: string
+    /** Freeform, and allowed to be empty: "milk" is a complete thought. */
+    quantity: string
+    checked: boolean
+}
+
+/**
  * Everything that isn't the shipped recipe library.
  *
  * Plan and grocery entries are keyed by date rather than a row id, because
@@ -83,16 +100,22 @@ export interface AppState {
     images: Record<number, ImageOverride> // recipeId
     edits: Record<number, RecipeEdit>     // recipeId
     servings: Record<number, number>      // recipeId — how many you usually cook it for
+    extras: ShoppingExtra[]
+    /** Week start -> lines taken off that week's list ("we've got olive oil").
+     *  Per week rather than for good: the plan is different every week, and a
+     *  permanent hide is a pantry, which is a different thing. */
+    dropped: Record<string, string[]>
     nextId: number
     nextPrefId: number
     nextSeq: number
+    nextExtraId: number
 }
 
 /** Recipes the user creates start here so they can never collide with the
  *  seeded library, however much it grows. */
 export const FIRST_LOCAL_ID = 1_000_000
 
-export const STATE_VERSION = 2
+export const STATE_VERSION = 3
 
 export const emptyState = (): AppState => ({
     version: STATE_VERSION,
@@ -104,9 +127,12 @@ export const emptyState = (): AppState => ({
     images: {},
     edits: {},
     servings: {},
+    extras: [],
+    dropped: {},
     nextId: FIRST_LOCAL_ID,
     nextPrefId: 1,
     nextSeq: 1,
+    nextExtraId: 1,
 })
 
 export const planKey = (date: string, slot = "dinner") => `${date}|${slot}`

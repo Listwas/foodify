@@ -206,6 +206,28 @@ export function parseAmount(quantity: string, column = ""): Amount | null {
 /** Metric is written 1.5 kg, never 1 1/2 kg. Fractions are for spoons. */
 const decimal = (value: number) => String(Math.round(value * 100) / 100)
 
+/**
+ * Split something typed on one line into an amount and the thing itself.
+ *
+ * Two fields would be more precise and worse: nobody writing a shopping list
+ * wants to tab between "2 kg" and "potatoes". The unit only joins the amount
+ * when it really is one, so "2 potatoes" keeps its potatoes.
+ */
+export function splitEntry(text: string): { quantity: string; name: string } {
+  const trimmed = (text ?? "").trim()
+  const match = deVulgar(trimmed).match(LEADING)
+  if (!match) return { quantity: "", name: trimmed }
+
+  const rest = trimmed.slice(match[0].length)
+  const unit = rest.match(/^\s*([A-Za-z]+)/)
+  const takesUnit = unit ? unitToken(rest) !== "" : false
+  const consumed = match[0].length + (takesUnit ? unit![0].length : 0)
+  return {
+    quantity: trimmed.slice(0, consumed).trim(),
+    name: trimmed.slice(consumed).trim(),
+  }
+}
+
 /** "500 g", "1.5 kg", "2 tbsp", "18 cloves", "3" — one total, ready to read. */
 export function formatAmount({ value, unit }: Amount): string {
   if (!unit) return prettyNumber(value)

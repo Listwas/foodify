@@ -34,9 +34,13 @@ export interface ShoppingLine {
      *  every mention was a pinch or a handful. */
     amounts: string[]
     checked: boolean
-    /** Every per-day grocery tick this line stands for. */
+    /** Every per-day grocery tick this line stands for. Empty for a line the
+     *  user added, which answers to nothing on the plan. */
     keys: string[]
     sources: ShoppingSource[]
+    /** Set when the user put this line here themselves, so it can be edited
+     *  and deleted rather than merely dropped. */
+    extraId?: number
 }
 
 export interface PlannedMeal {
@@ -53,6 +57,8 @@ export interface ShoppingWeek {
     /** Planned and already cooked, so left out of the list. */
     cooked: number
     sections: { section: Section; lines: ShoppingLine[] }[]
+    /** Taken off this week's list by hand, kept so they can be put back. */
+    dropped: ShoppingLine[]
     total: number
     ticked: number
 }
@@ -172,11 +178,32 @@ export function buildShoppingWeek(
         })
     }
 
-    const sections = [...new Set(lines.map(l => l.section))]
+    // Anything the user added sits in the same aisles as the rest, so the list
+    // reads as one list rather than a list plus an appendix.
+    for (const extra of state.extras) {
+        if (extra.week !== start) continue
+        const amount = parseAmount(extra.quantity)
+        lines.push({
+            key: `extra:${extra.id}`,
+            name: extra.name,
+            section: sectionFor(extra.name),
+            // an amount that won't parse ("a few") is shown as typed
+            amounts: amount ? [formatAmount(amount)] : (extra.quantity ? [extra.quantity] : []),
+            checked: extra.checked,
+            keys: [],
+            sources: [],
+            extraId: extra.id,
+        })
+    }
+
+    const droppedKeys = new Set(state.dropped[start] ?? [])
+    const visible = lines.filter(l => !droppedKeys.has(l.key))
+
+    const sections = [...new Set(visible.map(l => l.section))]
         .sort((a, b) => sectionRank(a) - sectionRank(b))
         .map(section => ({
             section,
-            lines: lines
+            lines: visible
                 .filter(l => l.section === section)
                 .sort((a, b) => a.name.localeCompare(b.name)),
         }))
@@ -187,8 +214,11 @@ export function buildShoppingWeek(
         meals,
         cooked: meals.length - toBuy.length,
         sections,
-        total: lines.length,
-        ticked: lines.filter(l => l.checked).length,
+        dropped: lines
+            .filter(l => droppedKeys.has(l.key))
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        total: visible.length,
+        ticked: visible.filter(l => l.checked).length,
     }
 }
 

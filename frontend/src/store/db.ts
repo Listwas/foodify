@@ -54,6 +54,10 @@ export function migrate(raw: unknown): AppState {
         state.nextSeq ?? 1,
         Object.values(state.feedback).reduce((max, f) => Math.max(max, f.seq ?? 0), 0) + 1
     )
+    state.nextExtraId = Math.max(
+        state.nextExtraId ?? 1,
+        state.extras.reduce((max, e) => Math.max(max, e.id), 0) + 1
+    )
     return state
 }
 

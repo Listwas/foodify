@@ -225,6 +225,91 @@ export function setChecks(keys: string[], checked: boolean) {
     })
 }
 
+// --- editing a week's shopping list -------------------------------------
+
+/** Put something on a week's list that no recipe asked for. */
+export function addExtra(week: string, name: string, quantity = "") {
+    const clean = name.trim()
+    if (!clean) return
+    update(s => ({
+        extras: [...s.extras, {
+            id: s.nextExtraId,
+            week,
+            name: clean,
+            quantity: quantity.trim(),
+            checked: false,
+        }],
+        nextExtraId: s.nextExtraId + 1,
+    }))
+}
+
+export function editExtra(id: number, name: string, quantity = "") {
+    const clean = name.trim()
+    if (!clean) return
+    update(s => ({
+        extras: s.extras.map(e =>
+            e.id === id ? { ...e, name: clean, quantity: quantity.trim() } : e
+        ),
+    }))
+}
+
+export function removeExtra(id: number) {
+    update(s => ({ extras: s.extras.filter(e => e.id !== id) }))
+}
+
+export function setExtraChecked(id: number, checked: boolean) {
+    update(s => ({
+        extras: s.extras.map(e => (e.id === id ? { ...e, checked } : e)),
+    }))
+}
+
+/**
+ * Take a line off this week's list, or put it back.
+ *
+ * Not the same as ticking it. A tick means it's in the basket and the day
+ * pages should agree; dropping means it was never going to be bought, so it
+ * shouldn't be in the way. Recoverable, and only for the week in hand.
+ */
+export function dropLine(week: string, key: string) {
+    update(s => {
+        const current = s.dropped[week] ?? []
+        if (current.includes(key)) return {}
+        return { dropped: { ...s.dropped, [week]: [...current, key] } }
+    })
+}
+
+export function restoreLine(week: string, key: string) {
+    update(s => {
+        const next = (s.dropped[week] ?? []).filter(k => k !== key)
+        const dropped = { ...s.dropped }
+        if (next.length) dropped[week] = next
+        else delete dropped[week]
+        return { dropped }
+    })
+}
+
+export function restoreAllLines(week: string) {
+    update(s => {
+        const dropped = { ...s.dropped }
+        delete dropped[week]
+        return { dropped }
+    })
+}
+
+/** Start the week's shopping over: planned ticks and your own items alike. */
+export function clearShoppingTicks(week: string, keys: string[]) {
+    update(s => {
+        const grocery = { ...s.grocery }
+        for (const key of keys) grocery[key] = false
+        return {
+            grocery,
+            extras: s.extras.map(e =>
+                e.week === week && e.checked ? { ...e, checked: false } : e
+            ),
+        }
+    })
+}
+
 // --- user recipes and photos --------------------------------------------
 
 /** Save a generated or hand-written recipe into the local library. */

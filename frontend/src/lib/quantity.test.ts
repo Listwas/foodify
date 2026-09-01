@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
-import { formatAmount, parseAmount, prettyNumber, scaleQuantity, sumAmounts } from "./quantity"
+import {
+    formatAmount, parseAmount, prettyNumber, scaleQuantity, splitEntry, sumAmounts,
+} from "./quantity"
 
 describe("scaleQuantity", () => {
     it("keeps the unit attached or spaced the way the recipe wrote it", () => {
@@ -102,6 +104,24 @@ describe("parseAmount", () => {
     it("has nothing to add up for an unmeasured amount", () => {
         expect(parseAmount("Pinch")).toBeNull()
         expect(parseAmount("To taste")).toBeNull()
+    })
+})
+
+describe("splitEntry", () => {
+    it("takes the unit with the amount when it really is one", () => {
+        expect(splitEntry("2 kg potatoes")).toEqual({ quantity: "2 kg", name: "potatoes" })
+        expect(splitEntry("1/2 cup rice")).toEqual({ quantity: "1/2 cup", name: "rice" })
+    })
+
+    it("leaves the thing itself alone when the next word isn't a unit", () => {
+        expect(splitEntry("2 potatoes")).toEqual({ quantity: "2", name: "potatoes" })
+        expect(splitEntry("6 eggs")).toEqual({ quantity: "6", name: "eggs" })
+    })
+
+    it("is happy with no amount at all", () => {
+        expect(splitEntry("milk")).toEqual({ quantity: "", name: "milk" })
+        expect(splitEntry("  bin bags ")).toEqual({ quantity: "", name: "bin bags" })
+        expect(splitEntry("")).toEqual({ quantity: "", name: "" })
     })
 })
 

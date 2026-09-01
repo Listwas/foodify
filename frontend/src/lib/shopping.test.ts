@@ -137,6 +137,57 @@ describe("buildShoppingWeek", () => {
         expect(all.ticked).toBe(1)
     })
 
+    it("files something you added into the aisle it belongs to", () => {
+        const built = week([], s => {
+            s.extras.push({ id: 1, week: MONDAY, name: "milk", quantity: "2 l", checked: false })
+            s.extras.push({ id: 2, week: MONDAY, name: "bin bags", quantity: "", checked: false })
+        })
+        const milk = lineFor(built, "milk")
+        expect(milk?.section).toBe("Dairy & eggs")
+        expect(milk?.amounts).toEqual(["2 l"])
+        expect(milk?.extraId).toBe(1)
+        // nothing recognisable is still a perfectly good line
+        expect(lineFor(built, "bin bags")?.amounts).toEqual([])
+        expect(built.total).toBe(2)
+    })
+
+    it("shows an amount it can't parse exactly as it was typed", () => {
+        const built = week([], s => {
+            s.extras.push({ id: 1, week: MONDAY, name: "coffee", quantity: "a bag", checked: false })
+        })
+        expect(lineFor(built, "coffee")?.amounts).toEqual(["a bag"])
+    })
+
+    it("keeps your own items to the week you added them to", () => {
+        const built = week([], s => {
+            s.extras.push({ id: 1, week: "2026-08-31", name: "milk", quantity: "", checked: false })
+        })
+        expect(built.total).toBe(0)
+    })
+
+    /* Dropping is not ticking. A tick says it's in the basket; dropping says
+       it was never going to be bought and shouldn't be in the way. */
+    it("takes a dropped line off the list but keeps it recoverable", () => {
+        const curry = recipe(1, "Curry", [["chicken", "200g"], ["olive oil", "2 tbsp"]])
+        const built = week([{ date: MONDAY, recipe: curry }], s => {
+            s.dropped[MONDAY] = ["olive oil"]
+        })
+        expect(built.total).toBe(1)
+        expect(lineFor(built, "olive oil")).toBeUndefined()
+        expect(built.dropped.map(l => l.name)).toEqual(["olive oil"])
+    })
+
+    it("counts only what's still on the list", () => {
+        const curry = recipe(1, "Curry", [["chicken", "200g"], ["salt", "Pinch"]])
+        const key = groceryKey(MONDAY, "dinner", curry.ingredients[0].id)
+        const built = week([{ date: MONDAY, recipe: curry }], s => {
+            s.grocery[key] = true
+            s.dropped[MONDAY] = ["salt"]
+        })
+        expect(built.total).toBe(1)
+        expect(built.ticked).toBe(1)
+    })
+
     it("looks past the end of the week and finds nothing", () => {
         const built = week([{ date: "2026-09-20", recipe: recipe(1, "Curry", [["chicken", "200g"]]) }])
         expect(built.total).toBe(0)
@@ -153,5 +204,18 @@ describe("shoppingText", () => {
         expect(shoppingText(built)).toBe(
             "MEAT & FISH\n[ ] 200 g chicken\n\nHERBS & SPICES\n[ ] salt"
         )
+    })
+
+    it("carries your own items out and leaves the dropped ones behind", () => {
+        const built = week(
+            [{ date: MONDAY, recipe: recipe(1, "Curry", [["chicken", "200g"], ["salt", "Pinch"]]) }],
+            s => {
+                s.extras.push({ id: 1, week: MONDAY, name: "bin bags", quantity: "", checked: false })
+                s.dropped[MONDAY] = ["salt"]
+            },
+        )
+        const text = shoppingText(built)
+        expect(text).toContain("[ ] bin bags")
+        expect(text).not.toContain("salt")
     })
 })
