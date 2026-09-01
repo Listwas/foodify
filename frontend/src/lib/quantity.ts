@@ -263,6 +263,102 @@ export function kitchenQuantity(quantity: string, factor = 1): string {
   return toMetric(scaleQuantity(quantity, factor))
 }
 
+// --- the method, which is prose rather than a field ---------------------
+
+// "1", "1.5", "1/2", "1 1/2", "½", "2 ½" — then any of them chained into a
+// dimension or a range: "9x13", "3-4", "10x14x2", "10- to 12".
+// Every one of these gets interpolated into a bigger pattern, so each is
+// wrapped: an alternation left bare escapes its intended scope and starts
+// matching things it was never meant to reach.
+const VULGAR_SRC = String.raw`[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]`
+const NUM_SRC =
+  String.raw`(?:\d+\s*${VULGAR_SRC}|${VULGAR_SRC}|\d+(?:\s+\d+\/\d+|\/\d+|\.\d+)?)`
+const JOIN_SRC = String.raw`(?:\s*(?:[x×]|-?\s*to|-)\s*)`
+const SEQ_SRC = String.raw`(?:${NUM_SRC}(?:${JOIN_SRC}${NUM_SRC})*)`
+
+const CELSIUS_SRC = String.raw`(?:\d+(?:\.\d+)?\s*(?:°\s*|degrees?\s*)?C\b)`
+// the trailing "degrees" is for "375 F degrees", which one recipe really says
+const FAHRENHEIT_SRC =
+  String.raw`(?:\d+(?:\.\d+)?\s*(?:°\s*|degrees?\s*)?F\b(?:\s+degrees?\b)?)`
+const CM_SRC = String.raw`(?:${SEQ_SRC}\s*-?\s*cm\b)`
+const INCH_SRC = String.raw`(?:${SEQ_SRC}\s*-?\s*(?:inch(?:es)?\b|"))`
+const METRIC_MASS_SRC = String.raw`(?:\d+(?:\.\d+)?\s*(?:kg|g|grams?|kilograms?)\b)`
+const IMPERIAL_MASS_SRC = String.raw`(?:\d+(?:\.\d+)?\s*(?:lbs?|pounds?|oz|ounces?)\b)`
+const METRIC_VOLUME_SRC = String.raw`(?:\d+(?:\.\d+)?\s*(?:ml|l|litres?|liters?)\b)`
+const IMPERIAL_VOLUME_SRC =
+  String.raw`(?:\d+(?:\.\d+)?\s*(?:fl\.?\s*oz|pints?|quarts?|gallons?)\b)`
+
+/**
+ * An oven dial has notches; a probe in a chicken does not.
+ *
+ * Above boiling this is a setting, and rounding to ten lands exactly on the
+ * numbers conversion charts print (350F becomes 180C, 400F becomes 200C).
+ * Below it, the reading is a food-safety threshold and the precise figure is
+ * the whole point: 165F has to come out as 74C, not 70C.
+ */
+function celsiusFrom(fahrenheit: number): number {
+  const c = ((fahrenheit - 32) * 5) / 9
+  return c < 100 ? Math.round(c) : Math.round(c / 10) * 10
+}
+
+const cmFromInches = (inches: number) => {
+  const cm = inches * 2.54
+  return cm < 5 ? Math.round(cm * 10) / 10 : Math.round(cm)
+}
+
+/**
+ * Delete an imperial restatement standing next to a metric one.
+ *
+ * Plenty of recipes give both: "200C/400F/Gas 6", "165 degrees F (74 degrees
+ * C)", "1 inch (2.5 cm)". They have already done the conversion, so their
+ * answer is kept and the other half removed. Converting instead would put two
+ * slightly different numbers for the same thing in one sentence.
+ */
+function dropParallel(text: string, metric: string, imperial: string): string {
+  const rx = (src: string) => new RegExp(src, "gi")
+  return text
+    // metric, then imperial in brackets: "190C (375F)", "20-cm (8-inch)"
+    .replace(rx(String.raw`(${metric})\s*\(\s*${imperial}\s*\)`), "$1")
+    // metric, then imperial after a slash or comma, possibly with an aside in
+    // between: "200C/400F/Gas 6", "140C (120C fan)/275F/gas 1"
+    .replace(rx(String.raw`(${metric})(\s*\([^)]*\))?\s*[/,]\s*${imperial}`), "$1$2")
+    // imperial first: "165 degrees F (74 degrees C)", "1 inch (2.5 cm)"
+    .replace(rx(String.raw`${imperial}\s*\(\s*(${metric})\s*\)`), "$1")
+    .replace(rx(String.raw`${imperial}\s*[/,]\s*(${metric})`), "$1")
+}
+
+/**
+ * The same treatment for the method as for the ingredients.
+ *
+ * Ovens, tin sizes and how thick to slice something are all written into the
+ * prose, where an amount field can't reach them. Cups and spoons are left
+ * alone: they are how people here write recipes too, unlike a 375 degree oven.
+ */
+export function metricProse(text: string): string {
+  if (!text) return text
+
+  let out = dropParallel(text, CELSIUS_SRC, FAHRENHEIT_SRC)
+  out = dropParallel(out, CM_SRC, INCH_SRC)
+  // "Melt 25g/1oz of the butter" and "add 250ml/10fl oz" are one amount, not two
+  out = dropParallel(out, METRIC_MASS_SRC, IMPERIAL_MASS_SRC)
+  out = dropParallel(out, METRIC_VOLUME_SRC, IMPERIAL_VOLUME_SRC)
+
+  out = out.replace(new RegExp(FAHRENHEIT_SRC, "gi"), match =>
+    `${celsiusFrom(parseFloat(match))}°C`)
+
+  out = out.replace(new RegExp(INCH_SRC, "gi"), match => {
+    const sequence = match
+      .replace(/\s*-?\s*(?:inch(?:es)?|")\s*$/i, "")
+      // "10- to 12" was "10-inch to 12-inch"; the dash has nothing left to hold
+      .replace(/-\s*to\b/gi, " to")
+    // rewrite each number in place, so "9x13" keeps its x and "3-4" its dash
+    return `${sequence.replace(new RegExp(NUM_SRC, "g"), n =>
+      String(cmFromInches(toNumber(deVulgar(n)))))} cm`
+  })
+
+  return sweepEmbedded(out)
+}
+
 export interface Amount {
   value: number
   /** Canonical unit key, or "" for a bare count. */

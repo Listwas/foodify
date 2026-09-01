@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import type { RecipeFull, Verdict } from "../../lib/types"
 import { imageBox, ingredientLabel, macroLine, mealImage } from "../../lib/format"
-import { kitchenQuantity } from "../../lib/quantity"
+import { kitchenQuantity, metricProse } from "../../lib/quantity"
 import { useSwipe, type SwipeDir } from "../../lib/useSwipe"
 import { useToast } from "../../context/ToastContext"
 import { clearFeedback, getState, lastJudged, setFeedback } from "../../store"
@@ -52,7 +52,7 @@ function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
                 </ul>
                 <h4>Method</h4>
                 <p className={s.detailsMethod}>
-                    {card.instructions || "No instructions recorded."}
+                    {metricProse(card.instructions) || "No instructions recorded."}
                 </p>
             </div>
         </div>

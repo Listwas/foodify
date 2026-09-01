@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
-import { kitchenQuantity } from "../../lib/quantity"
+import { kitchenQuantity, metricProse } from "../../lib/quantity"
 import {
     clearFeedback, deleteRecipe, isLocalRecipe, restoreRecipe, servingsFor,
     setFeedback, setImage, setRecipeServings, useAppState,
@@ -233,7 +233,9 @@ function RecipePage() {
                 </section>
                 <section>
                     <h2>Instructions</h2>
-                    <div className={s.instructions}>{r.instructions || "No instructions recorded."}</div>
+                    <div className={s.instructions}>
+                        {metricProse(r.instructions) || "No instructions recorded."}
+                    </div>
                 </section>
             </div>
 

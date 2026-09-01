@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { dayLong, iso, startOfWeek } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
-import { kitchenQuantity } from "../../lib/quantity"
+import { kitchenQuantity, metricProse } from "../../lib/quantity"
 import { useToast } from "../../context/ToastContext"
 import { markCooked, servingsFor, setCheck, setDayServings, useAppState } from "../../store"
 import { BASE_SERVINGS, groceryKey, planKey } from "../../store/types"
@@ -140,7 +140,7 @@ function DayDetail() {
                 <section className={s.instructions}>
                     <h2>Instructions</h2>
                     <div className={s.instructionsText}>
-                        {recipe.instructions || "No instructions recorded."}
+                        {metricProse(recipe.instructions) || "No instructions recorded."}
                     </div>
                 </section>
             </div>

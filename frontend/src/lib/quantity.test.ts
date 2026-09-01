@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import {
-    formatAmount, kitchenQuantity, parseAmount, prettyNumber, scaleQuantity,
-    splitEntry, sumAmounts, toMetric,
+    formatAmount, kitchenQuantity, metricProse, parseAmount, prettyNumber,
+    scaleQuantity, splitEntry, sumAmounts, toMetric,
 } from "./quantity"
 
 describe("scaleQuantity", () => {
@@ -165,6 +165,66 @@ describe("kitchenQuantity", () => {
     })
 })
 
+/*
+ * The method is prose, so the oven temperature and how thick to slice things
+ * live in sentences where an amount field can't reach them.
+ */
+describe("metricProse", () => {
+    it("turns an oven dial to the notch a conversion chart prints", () => {
+        expect(metricProse("Preheat the oven to 350°F.")).toBe("Preheat the oven to 180°C.")
+        expect(metricProse("Preheat oven to 400 degrees F.")).toBe("Preheat oven to 200°C.")
+        expect(metricProse("Bake at 425 F.")).toBe("Bake at 220°C.")
+        expect(metricProse("Preheat oven to 375 F degrees.")).toBe("Preheat oven to 190°C.")
+    })
+
+    /* Below boiling this is a probe in a chicken, not a dial, and 165F has to
+       come out as the 74C it means rather than a rounded 70. */
+    it("keeps a food-safety reading exact", () => {
+        expect(metricProse("until it reads 165°F.")).toBe("until it reads 74°C.")
+        expect(metricProse("cooked through at 145°F.")).toBe("cooked through at 63°C.")
+    })
+
+    it("drops the half it can't use when a recipe gives both", () => {
+        expect(metricProse("Preheat the oven to 200C/400F/Gas 6."))
+            .toBe("Preheat the oven to 200C/Gas 6.")
+        expect(metricProse("lower the oven setting to 180C, 350F, gas 4"))
+            .toBe("lower the oven setting to 180C, gas 4")
+        expect(metricProse("heat the oven to 140C (120C fan)/275F/gas 1"))
+            .toBe("heat the oven to 140C (120C fan)/gas 1")
+        expect(metricProse("reads 165 degrees F (74 degrees C), about an hour"))
+            .toBe("reads 74 degrees C, about an hour")
+        expect(metricProse("Cut beef into 1 inch (2.5 cm) cubes"))
+            .toBe("Cut beef into 2.5 cm cubes")
+        expect(metricProse("Melt 25g/1oz of the butter")).toBe("Melt 25g of the butter")
+        expect(metricProse("Gradually add 250ml/10fl oz of the stock"))
+            .toBe("Gradually add 250ml of the stock")
+    })
+
+    it("measures in centimetres, dimensions and ranges included", () => {
+        expect(metricProse("Cut into 1/2 inch cubes.")).toBe("Cut into 1.3 cm cubes.")
+        expect(metricProse("into ¼-inch-thick pieces")).toBe("into 0.6 cm-thick pieces")
+        expect(metricProse("Grease a 10x14x2-inch pan.")).toBe("Grease a 25x36x5 cm pan.")
+        expect(metricProse("a large 10- to 12-inch skillet")).toBe("a large 25 to 30 cm skillet")
+        expect(metricProse('roll into a 13x8" rectangle')).toBe("roll into a 33x20 cm rectangle")
+    })
+
+    /* The word appears far more often as a verb than a unit, and mangling an
+       instruction is worse than leaving a unit alone. */
+    it("knows a pound you do to garlic from a pound you weigh", () => {
+        expect(metricProse("Pound the garlic with a pestle")).toBe("Pound the garlic with a pestle")
+        expect(metricProse("pound gently with a mallet")).toBe("pound gently with a mallet")
+        expect(metricProse("Add 1 lb of beef")).toBe("Add 450 g of beef")
+    })
+
+    it("leaves what is already ours completely alone", () => {
+        const metric = "Heat oven to 200C/fan 180C/gas 6. Simmer for 20 minutes."
+        expect(metricProse(metric)).toBe(metric)
+        const spoons = "Add 2 tbsp oil and 1 cup rice."
+        expect(metricProse(spoons)).toBe(spoons)
+        expect(metricProse("")).toBe("")
+    })
+})
+
 describe("splitEntry", () => {
     it("takes the unit with the amount when it really is one", () => {
         expect(splitEntry("2 kg potatoes")).toEqual({ quantity: "2 kg", name: "potatoes" })
@@ -235,7 +295,7 @@ describe("sumAmounts", () => {
 describe("the shipped library", () => {
     const library = JSON.parse(
         readFileSync(new URL("../../public/recipes.json", import.meta.url), "utf8")
-    ) as { recipes: { ingredients: { quantity: string; unit: string }[] }[] }
+    ) as { recipes: { title: string; instructions: string; ingredients: { quantity: string; unit: string }[] }[] }
     const rows = library.recipes.flatMap(r => r.ingredients)
 
     it("is understood wherever it states a number", () => {
@@ -254,6 +314,19 @@ describe("the shipped library", () => {
             }
         }
         expect([...offenders]).toEqual([])
+    })
+
+    /* Only numerals: "a couple of inches" has no exact value to convert, and
+       "pound the garlic" is a verb. Both are left as the author wrote them. */
+    it("leaves no numeric imperial measurement in any method", () => {
+        const numeric = /\d+\s*(?:°\s*|degrees?\s*)?F\b|\d[\d\s/.¼½¾-]*\s*-?\s*(?:inch(es)?\b|")|\d[\d\s/.]*\s*(?:lbs?|pounds?|oz|ounces?)\b/i
+        const offenders: string[] = []
+        for (const recipe of library.recipes) {
+            const shown = metricProse(recipe.instructions)
+            const hit = shown.match(numeric)
+            if (hit) offenders.push(`${recipe.title}: ${hit[0]}`)
+        }
+        expect(offenders).toEqual([])
     })
 
     it("hands the shopping list metric amounts to add up", () => {
