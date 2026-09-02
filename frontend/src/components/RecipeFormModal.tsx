@@ -1,9 +1,11 @@
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import type { RecipeCandidate, RecipeFull } from "../lib/types"
 import type { RecipeEdit } from "../store/types"
 import { useToast } from "../context/ToastContext"
 import { addRecipe, assign, editRecipe } from "../store"
 import { useProteinTypes } from "../data/library"
+import { useIndex } from "../data/taste"
+import { guessCategory } from "../engine"
 import Icon from "./Icon"
 import Modal from "./Modal"
 import PhotoPicker, { type PhotoChoice } from "./PhotoPicker"
@@ -77,6 +79,16 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
     const lastRow = useRef<HTMLInputElement>(null)
 
     const filled = rows.filter(r => r.name.trim())
+
+    // Worked out from the ingredients as they're typed, using the categories
+    // the shipped library already carries. Offered, never applied: it is right
+    // about three times in four, which is a good default and a bad decision.
+    const index = useIndex()
+    const guess = useMemo(
+        () => (filled.length ? guessCategory(index, filled) : null),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [index, filled.map(r => r.name).join("|")]
+    )
     const titleMissing = touched && !title.trim()
     const ingredientsMissing = touched && filled.length === 0
 
@@ -102,9 +114,19 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
         }))
     }
 
+    /**
+     * The category the recipe will be filed under.
+     *
+     * Left blank, the guess is used rather than nothing: a recipe with no
+     * category sits outside everything the engine does with them, and the
+     * suggestion has been on screen the whole time, so this is a default
+     * being taken up rather than a decision made behind anyone's back.
+     */
+    const category = () => protein.trim() || guess?.category || null
+
     const common = () => ({
         title: title.trim(),
-        protein_type: protein.trim() || null,
+        protein_type: category(),
         prep_time_minutes: num(time),
         instructions: instructions.trim(),
         calories: num(macros.calories),
@@ -132,10 +154,15 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
         }
         const saved = addRecipe(candidate)
         if (date) assign(saved.id, date)
+        // say so when the category was filled in for them, so a wrong guess is
+        // something they can see and go back for
+        const filedAs = !protein.trim() && saved.protein_type
+            ? `, filed under ${saved.protein_type}`
+            : ""
         showToast(
             copiedFrom ? `Copied: ${saved.title}`
-                : date ? `Planned: ${saved.title}`
-                    : `Saved: ${saved.title}`
+                : date ? `Planned: ${saved.title}${filedAs}`
+                    : `Saved: ${saved.title}${filedAs}`
         )
         onClose()
     }
@@ -178,6 +205,19 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                         <datalist id="known-proteins">
                             {proteins.map(p => <option key={p} value={p} />)}
                         </datalist>
+                        {/* Left empty this is the one thing the engine can't
+                            learn from a recipe, so it offers an answer rather
+                            than quietly filing the dish under nothing. */}
+                        {guess && !protein && (
+                            <button
+                                type="button"
+                                className={s.guess}
+                                onClick={() => setProtein(guess.category)}
+                            >
+                                <Icon name="sparkle" size={13} />
+                                Looks like <b>{guess.category}</b> &mdash; use it
+                            </button>
+                        )}
                     </label>
                     <label className={s.field}>
                         <span className={s.label}>Minutes</span>

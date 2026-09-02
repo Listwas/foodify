@@ -28,6 +28,25 @@
     color: var(--danger);
 }
 
+/* An offer, so it looks like something to press rather than a label. */
+.guess {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    justify-self: start;
+    padding: 3px 9px;
+    border: 1px dashed var(--bg-30);
+    border-radius: 999px;
+    background: none;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.guess b { color: var(--text); font-weight: 650; }
+.guess:hover { border-style: solid; border-color: var(--accent); color: var(--accent); }
+.guess:hover b { color: var(--accent); }
+
 /* --- ingredient rows -------------------------------------------------- */
 
 .rows {

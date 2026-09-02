@@ -135,7 +135,15 @@
     display: flex;
     gap: var(--s2);
     flex: none;
+    flex-wrap: wrap;
 }
+
+/* Quiet until you ask for it: the name of this row is warning enough, and a
+   permanently red button on a settings page reads as an alarm. */
+.wipeBtn { color: var(--text-dim); }
+.wipeBtn:hover { color: var(--danger); border-color: var(--danger); }
+
+.danger .settingName { color: var(--danger); }
 
 .credit {
     margin: var(--s4) 0 0;

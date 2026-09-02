@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from "react"
 import type { Stance } from "../../lib/types"
 import { useToast } from "../../context/ToastContext"
-import { addPref, exportState, importState, removePref, useAppState } from "../../store"
+import {
+    addPref, exportState, importState, removePref, resetState, useAppState,
+} from "../../store"
 import { useIndex, useSignals } from "../../data/taste"
 import { tasteSummary } from "../../engine"
 import Icon from "../../components/Icon"
@@ -59,6 +61,7 @@ function IngredientInput({ stance, names }: { stance: Stance; names: string[] })
 function Settings() {
     const { showToast } = useToast()
     const fileInput = useRef<HTMLInputElement>(null)
+    const [confirmWipe, setConfirmWipe] = useState(false)
     const [theme, setTheme] = useState(
         () => document.documentElement.getAttribute("data-theme") ?? "dark"
     )
@@ -130,6 +133,51 @@ function Settings() {
                         hidden
                         onChange={e => void upload(e.target.files?.[0])}
                     />
+                </div>
+            </div>
+
+            {/* Last, behind a confirmation, and next door to Export, because
+                the backup is the only thing standing between this button and
+                a plan that took months to build. */}
+            <div className={`${s.settingRow} ${s.danger}`}>
+                <div>
+                    <div className={s.settingName}>Wipe all data</div>
+                    <div className={s.settingNote}>
+                        Clears your plan, every swipe, your ingredient preferences, groceries
+                        and any recipe you wrote. There is no undo and no copy on a server.
+                    </div>
+                </div>
+                <div className={s.settingActions}>
+                    {confirmWipe ? (
+                        <>
+                            <button className="btn" onClick={download}>
+                                <Icon name="download" size={16} />
+                                Back up first
+                            </button>
+                            <button
+                                className="btn danger"
+                                onClick={() => {
+                                    resetState()
+                                    localStorage.removeItem("planner-mode")
+                                    setConfirmWipe(false)
+                                    showToast("Everything wiped. Starting fresh.")
+                                }}
+                            >
+                                Yes, wipe everything
+                            </button>
+                            <button className="btn ghost" onClick={() => setConfirmWipe(false)}>
+                                Cancel
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            className={`btn ${s.wipeBtn}`}
+                            onClick={() => setConfirmWipe(true)}
+                        >
+                            <Icon name="ban" size={16} />
+                            Wipe all data
+                        </button>
+                    )}
                 </div>
             </div>
 
