@@ -43,6 +43,6 @@ describe("coverage of the shipped library", () => {
     it("covers most of what the recipes actually ask for", () => {
         const names = library.recipes.flatMap(r => r.ingredients.map(i => i.name))
         const known = names.filter(n => knownFood(n, "pl")).length
-        expect(known / names.length).toBeGreaterThan(0.80)
+        expect(known / names.length).toBeGreaterThan(0.90)
     })
 })

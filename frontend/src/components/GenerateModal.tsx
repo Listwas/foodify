@@ -98,7 +98,7 @@ function GenerateModal({ date, onClose }: Props) {
                             className="field"
                             value={mood}
                             onChange={e => setMood(e.target.value)}
-                            placeholder="e.g. something spicy, cozy comfort food…"
+                            placeholder={t("e.g. something spicy, cozy comfort food…")}
                             maxLength={300}
                         />
                     </label>

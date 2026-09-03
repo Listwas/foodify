@@ -73,9 +73,15 @@
     background: var(--bg-10);
     border: 1px solid var(--bg-20);
     border-radius: 999px;
-    padding: 4px 6px 4px 12px;
+    /* Symmetric, so a plain pill reads centred. The lopsided version below is
+       only for the ones carrying a remove button, which was where this padding
+       came from — the category pills inherited room for a button they haven't
+       got and sat 13px from one edge and 7px from the other. */
+    padding: 4px 12px;
     font-size: 0.8rem;
 }
+
+.tag:has(button) { padding-right: 6px; }
 .tag button {
     background: none;
     border: none;

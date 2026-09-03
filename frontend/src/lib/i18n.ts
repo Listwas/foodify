@@ -203,6 +203,11 @@ const DICT: Record<string, Entry> = {
     "Edit recipe": "Edytuj przepis",
     "Name": "Nazwa",
     "Grandma's tomato soup": "Pomidorowa babci",
+    "e.g. chicken": "np. kurczak",
+    "e.g. tinned tomatoes": "np. pomidory z puszki",
+    "1. Soften the onions.\n2. Add everything else.\n3. Simmer 20 minutes.":
+        "1. Zeszklij cebulę.\n2. Dodaj resztę.\n3. Gotuj 20 minut.",
+    "e.g. something spicy, cozy comfort food…": "np. coś ostrego, domowe komfortowe jedzenie…",
     "Give it a name first.": "Najpierw nadaj nazwę.",
     "Main ingredient": "Główny składnik",
     "Minutes": "Minuty",

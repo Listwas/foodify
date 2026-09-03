@@ -47,7 +47,7 @@ export function Menu({ items, label = "More actions", children }: {
                 onClick={() => setOpen(o => !o)}
                 aria-label={t(label)}
                 aria-expanded={open}
-                data-tip={open ? undefined : label}
+                data-tip={open ? undefined : t(label)}
             >
                 {children ?? <Icon name="more" />}
             </button>

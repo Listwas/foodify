@@ -200,7 +200,7 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                             className="field"
                             value={protein}
                             onChange={e => setProtein(e.target.value.toLowerCase())}
-                            placeholder="chicken"
+                            placeholder={t("e.g. chicken")}
                             list="known-proteins"
                             maxLength={24}
                         />
@@ -264,7 +264,7 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                                             addRow()
                                         }
                                     }}
-                                    placeholder="tinned tomatoes"
+                                    placeholder={t("e.g. tinned tomatoes")}
                                     aria-label={`ingredient ${i + 1}`}
                                 />
                                 <button
@@ -291,7 +291,7 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                         className={`field ${s.steps}`}
                         value={instructions}
                         onChange={e => setInstructions(e.target.value)}
-                        placeholder={"1. Soften the onions.\n2. Add everything else.\n3. Simmer 20 minutes."}
+                        placeholder={t("1. Soften the onions.\n2. Add everything else.\n3. Simmer 20 minutes.")}
                         rows={5}
                     />
                 </label>
