@@ -41,12 +41,12 @@ function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
     return (
         <div className={s.details}>
             <div className={s.detailsHead}>
-                <h3>{tr(card.title)}</h3>
+                <h3 className={tr.pending ? "translating" : ""}>{tr(card.title)}</h3>
                 <button className={s.detailsClose} onClick={onClose} aria-label={t("close details")}>
                     <Icon name="close" size={18} />
                 </button>
             </div>
-            <div className={s.detailsBody}>
+            <div className={`${s.detailsBody} ${tr.pending ? "translating" : ""}`}>
                 <h4>{t("Ingredients")}</h4>
                 <ul className={s.detailsList}>
                     {card.ingredients.map(i => (
@@ -121,7 +121,7 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
                 )}
             </div>
             <div className={s.body}>
-                <h2>{tr(card.title)}</h2>
+                <h2 className={tr.pending ? "translating" : ""}>{tr(card.title)}</h2>
                 <div className={s.meta}>
                     {t(card.protein_type ?? "")}
                     {card.prep_time_minutes != null && <> · {card.prep_time_minutes} {t("min")}</>}

@@ -300,14 +300,14 @@ function Profile() {
                         {taste.likes.length > 0 && (
                             <LearnedRow label={t("drawn to")}>
                                 {taste.likes.map(l => (
-                                    <span key={l.name} className={`${s.tag} ${s.tagLike}`}>{tr(l.name)}</span>
+                                    <span key={l.name} className={`${s.tag} ${s.tagLike} ${tr.pending ? "translating" : ""}`}>{tr(l.name)}</span>
                                 ))}
                             </LearnedRow>
                         )}
                         {taste.dislikes.length > 0 && (
                             <LearnedRow label={t("steering clear of")}>
                                 {taste.dislikes.map(l => (
-                                    <span key={l.name} className={`${s.tag} ${s.tagAvoid}`}>{tr(l.name)}</span>
+                                    <span key={l.name} className={`${s.tag} ${s.tagAvoid} ${tr.pending ? "translating" : ""}`}>{tr(l.name)}</span>
                                 ))}
                             </LearnedRow>
                         )}

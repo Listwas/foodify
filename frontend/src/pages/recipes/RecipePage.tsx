@@ -157,7 +157,7 @@ function RecipePage() {
                 </div>
 
                 <div className={s.heroBody}>
-                    <h1>{tr(r.title)}</h1>
+                    <h1 className={tr.pending ? "translating" : ""}>{tr(r.title)}</h1>
                     {(r.edited || r.copied_from || hidden) && (
                         <div className={s.marks}>
                             {hidden && (
@@ -226,7 +226,7 @@ function RecipePage() {
                         base={BASE_SERVINGS}
                         onChange={next => setRecipeServings(r.id, next)}
                     />
-                    <ul className={s.ingredients}>
+                    <ul className={`${s.ingredients} ${tr.pending ? "translating" : ""}`}>
                         {r.ingredients.map(i => (
                             <li key={i.id}>
                                 {ingredientLabel({
@@ -240,7 +240,7 @@ function RecipePage() {
                 </section>
                 <section>
                     <h2>{t("Instructions")}</h2>
-                    <div className={s.instructions}>
+                    <div className={`${s.instructions} ${tr.pending ? "translating" : ""}`}>
                         {metricProse(tr(r.instructions)) || t("No instructions recorded.")}
                     </div>
                 </section>

@@ -90,7 +90,7 @@ function DayDetail() {
                     />
                 )}
                 <div className={s.heroBody}>
-                    <h1>{tr(recipe.title)}</h1>
+                    <h1 className={tr.pending ? "translating" : ""}>{tr(recipe.title)}</h1>
                     <div className={s.meta}>
                         {t(recipe.protein_type ?? "")}
                         {recipe.prep_time_minutes != null && <> · {recipe.prep_time_minutes} {t("min")}</>}
@@ -120,7 +120,7 @@ function DayDetail() {
                         base={BASE_SERVINGS}
                         onChange={next => setDayServings(date, next, SLOT)}
                     />
-                    <ul className={s.checklist}>
+                    <ul className={`${s.checklist} ${tr.pending ? "translating" : ""}`}>
                         {items.map(item => (
                             <li key={item.id}>
                                 <label className={item.checked ? s.checked : ""}>
@@ -145,7 +145,7 @@ function DayDetail() {
 
                 <section className={s.instructions}>
                     <h2>{t("Instructions")}</h2>
-                    <div className={s.instructionsText}>
+                    <div className={`${s.instructionsText} ${tr.pending ? "translating" : ""}`}>
                         {metricProse(tr(recipe.instructions)) || t("No instructions recorded.")}
                     </div>
                 </section>

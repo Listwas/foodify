@@ -351,6 +351,8 @@ const DICT: Record<string, Entry> = {
     "light": "jasny",
     "Switch to {theme}": "Przełącz na {theme}",
     "Language": "Język",
+    "Translating…": "Tłumaczę…",
+    "Translation limit reached for today": "Dzienny limit tłumaczeń wyczerpany",
     "The app's own words. Recipes stay in English.":
         "Język aplikacji. Przepisy zostają po angielsku.",
     "Your data": "Twoje dane",

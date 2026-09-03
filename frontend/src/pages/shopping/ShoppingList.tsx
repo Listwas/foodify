@@ -253,7 +253,7 @@ function ShoppingList() {
                                                     checked={line.checked}
                                                     onChange={() => toggle(line)}
                                                 />
-                                                <span className={s.name}>{tr(line.name)}</span>
+                                                <span className={`${s.name} ${tr.pending ? "translating" : ""}`}>{tr(line.name)}</span>
                                                 {/* Empty for a pinch or a handful. Inventing a
                                                     number there would be worse than saying
                                                     nothing. */}

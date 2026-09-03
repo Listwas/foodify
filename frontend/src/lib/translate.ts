@@ -20,7 +20,7 @@
  * recipe that someone can still cook from.
  */
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import { knownFood } from "./foodwords"
 import { useLang } from "./i18n"
 
@@ -113,8 +113,44 @@ export function splitChunks(text: string, limit = CHUNK_LIMIT): string[] {
 
 /** Set once the service says we're done for the day, to stop asking. */
 let exhausted = false
+/** How many requests are out right now, so the UI can say it's working. */
+let inFlight = 0
+const watchers = new Set<() => void>()
+
+const announce = () => watchers.forEach(w => w())
+
+function watchStatus(listener: () => void) {
+    watchers.add(listener)
+    return () => void watchers.delete(listener)
+}
+
+/**
+ * Whether anything is being translated, and whether the day's allowance is
+ * gone. Both worth saying out loud: text that is about to change should look
+ * like it, and text that is staying English should say why.
+ */
+export function useTranslateStatus(): { busy: boolean; outOfQuota: boolean } {
+    const snapshot = useSyncExternalStore(
+        watchStatus,
+        () => `${inFlight}|${exhausted}`,
+        () => "0|false",
+    )
+    const [count, spent] = snapshot.split("|")
+    return { busy: Number(count) > 0, outOfQuota: spent === "true" }
+}
 
 async function fetchOne(text: string, lang: string): Promise<string> {
+    inFlight += 1
+    announce()
+    try {
+        return await request(text, lang)
+    } finally {
+        inFlight -= 1
+        announce()
+    }
+}
+
+async function request(text: string, lang: string): Promise<string> {
     const parts: string[] = []
     for (const chunk of splitChunks(text.slice(0, MAX_SOURCE))) {
         const url = new URL("https://api.mymemory.translated.net/get")
@@ -132,6 +168,7 @@ async function fetchOne(text: string, lang: string): Promise<string> {
         // in the field where the translation should be
         if (!out || out.toUpperCase().includes("MYMEMORY WARNING")) {
             exhausted = true
+            announce()
             throw new Error("quota exhausted")
         }
         parts.push(out)
@@ -210,9 +247,16 @@ export const quotaSpent = () => exhausted
  * the page renders immediately and fills in rather than blocking on a network
  * call. In English it is the identity function and nothing is ever requested.
  */
-export function useTranslated(texts: (string | null | undefined)[]): (text: string) => string {
+export interface Translator {
+    (text: string): string
+    /** True while this batch is still out. Text on screen is still English. */
+    pending: boolean
+}
+
+export function useTranslated(texts: (string | null | undefined)[]): Translator {
     const lang = useLang()
     const [map, setMap] = useState<Map<string, string>>(EMPTY)
+    const [pending, setPending] = useState(false)
 
     const wanted = texts.filter((s): s is string => !!s && !!s.trim())
     // A stable dependency, since the array is new on every render. The
@@ -223,15 +267,22 @@ export function useTranslated(texts: (string | null | undefined)[]): (text: stri
     useEffect(() => {
         if (lang === "en" || !signature) {
             setMap(EMPTY)
+            setPending(false)
             return
         }
         let alive = true
-        void translateBatch(signature.split(SEP), lang)
-            .then(result => { if (alive) setMap(result) })
+        setPending(true)
+        void translateBatch(signature.split(SEP), lang).then(result => {
+            if (!alive) return
+            setMap(result)
+            setPending(false)
+        })
         return () => { alive = false }
     }, [lang, signature])
 
-    return (text: string) => map.get(text.trim()) ?? text
+    const translator = ((text: string) => map.get(text.trim()) ?? text) as Translator
+    translator.pending = pending
+    return translator
 }
 
 const EMPTY: Map<string, string> = new Map()

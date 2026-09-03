@@ -310,7 +310,7 @@ function RecipeBrowse() {
                                     )}
                                 </div>
                                 <div className={s.cardBody}>
-                                    <div className={s.cardTitle}>{tr(r.title)}</div>
+                                    <div className={`${s.cardTitle} ${tr.pending ? "translating" : ""}`}>{tr(r.title)}</div>
                                     <div className={s.cardMeta}>
                                         {t(r.protein_type ?? "")}
                                         {r.prep_time_minutes != null && <> · {r.prep_time_minutes} {t("min")}</>}
