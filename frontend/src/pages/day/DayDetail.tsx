@@ -4,6 +4,7 @@ import { dayLong, iso, startOfWeek } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
 import { kitchenQuantity, metricProse } from "../../lib/quantity"
 import { useT } from "../../lib/i18n"
+import { useTranslated } from "../../lib/translate"
 import { useToast } from "../../context/ToastContext"
 import { markCooked, servingsFor, setCheck, setDayServings, useAppState } from "../../store"
 import { BASE_SERVINGS, groceryKey, planKey } from "../../store/types"
@@ -23,6 +24,9 @@ function DayDetail() {
     const [modal, setModal] = useState<"suggest" | "generate" | null>(null)
     const state = useAppState()
     const recipes = useRecipeMap()
+    const planned = date ? state.plan[planKey(date)] : undefined
+    const dish = planned && recipes.get(planned.recipeId)
+    const tr = useTranslated([dish?.title, dish?.instructions, ...(dish?.ingredients ?? []).map(i => i.name)])
 
     const slot = date ? state.plan[planKey(date)] : undefined
     const recipe = slot && recipes.get(slot.recipeId)
@@ -86,9 +90,9 @@ function DayDetail() {
                     />
                 )}
                 <div className={s.heroBody}>
-                    <h1>{recipe.title}</h1>
+                    <h1>{tr(recipe.title)}</h1>
                     <div className={s.meta}>
-                        {recipe.protein_type}
+                        {t(recipe.protein_type ?? "")}
                         {recipe.prep_time_minutes != null && <> · {recipe.prep_time_minutes} {t("min")}</>}
                         {recipe.source === "ai" && <> · {t("generated")}</>}
                     </div>
@@ -125,7 +129,7 @@ function DayDetail() {
                                         checked={item.checked}
                                         onChange={e => setCheck(date, SLOT, item.id, e.target.checked)}
                                     />
-                                    <span>{ingredientLabel(item)}</span>
+                                    <span>{ingredientLabel({ ...item, name: tr(item.name) })}</span>
                                 </label>
                             </li>
                         ))}
@@ -142,7 +146,7 @@ function DayDetail() {
                 <section className={s.instructions}>
                     <h2>{t("Instructions")}</h2>
                     <div className={s.instructionsText}>
-                        {metricProse(recipe.instructions) || t("No instructions recorded.")}
+                        {metricProse(tr(recipe.instructions)) || t("No instructions recorded.")}
                     </div>
                 </section>
             </div>

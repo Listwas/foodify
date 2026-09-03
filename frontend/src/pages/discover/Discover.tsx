@@ -4,6 +4,7 @@ import type { RecipeFull, Verdict } from "../../lib/types"
 import { imageBox, ingredientLabel, macroLine, mealImage } from "../../lib/format"
 import { kitchenQuantity, metricProse } from "../../lib/quantity"
 import { useT } from "../../lib/i18n"
+import { useTranslated } from "../../lib/translate"
 import { reasonText } from "../../lib/reasons"
 import { useSwipe, type SwipeDir } from "../../lib/useSwipe"
 import { useToast } from "../../context/ToastContext"
@@ -36,10 +37,11 @@ const LABEL: Record<SwipeDir, string> = { right: "Yes", left: "Pass", down: "Hid
  */
 function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
     const t = useT()
+    const tr = useTranslated([card.title, card.instructions, ...card.ingredients.map(i => i.name)])
     return (
         <div className={s.details}>
             <div className={s.detailsHead}>
-                <h3>{card.title}</h3>
+                <h3>{tr(card.title)}</h3>
                 <button className={s.detailsClose} onClick={onClose} aria-label={t("close details")}>
                     <Icon name="close" size={18} />
                 </button>
@@ -49,13 +51,13 @@ function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
                 <ul className={s.detailsList}>
                     {card.ingredients.map(i => (
                         <li key={i.id}>
-                            {ingredientLabel({ ...i, quantity: kitchenQuantity(i.quantity) })}
+                            {ingredientLabel({ ...i, name: tr(i.name), quantity: kitchenQuantity(i.quantity) })}
                         </li>
                     ))}
                 </ul>
                 <h4>{t("Method")}</h4>
                 <p className={s.detailsMethod}>
-                    {metricProse(card.instructions) || t("No instructions recorded.")}
+                    {metricProse(tr(card.instructions)) || t("No instructions recorded.")}
                 </p>
             </div>
         </div>
@@ -71,6 +73,8 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
     onClose: () => void
 }) {
     const t = useT()
+    // only the title on the card face; the method waits until it is opened
+    const tr = useTranslated([card.title])
     const { handlers, style, intent } = useSwipe(onCommit)
     const img = mealImage(card.image_url, "hero")
     // dragging while reading would fling the card away mid-sentence
@@ -117,9 +121,9 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
                 )}
             </div>
             <div className={s.body}>
-                <h2>{card.title}</h2>
+                <h2>{tr(card.title)}</h2>
                 <div className={s.meta}>
-                    {card.protein_type}
+                    {t(card.protein_type ?? "")}
                     {card.prep_time_minutes != null && <> · {card.prep_time_minutes} {t("min")}</>}
                 </div>
                 {macroLine(card) && <div className="macros">{macroLine(card)}</div>}

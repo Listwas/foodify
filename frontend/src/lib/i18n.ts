@@ -284,6 +284,25 @@ const DICT: Record<string, Entry> = {
     "{n} meals": { one: "{n} posiłek", few: "{n} posiłki", many: "{n} posiłków" },
     "some": "trochę",
 
+    // --- the categories recipes are filed under ---
+    // A closed set that comes out of the library, so it is worth translating
+    // by hand rather than sending to a machine that renders "other" as "inny".
+    "beef": "wołowina",
+    "chicken": "kurczak",
+    "pork": "wieprzowina",
+    "lamb": "jagnięcina",
+    "goat": "koźlina",
+    "fish": "ryba",
+    "seafood": "owoce morza",
+    "pasta": "makaron",
+    "vegetarian": "wegetariańskie",
+    "vegan": "wegańskie",
+    "side": "dodatek",
+    "dessert": "deser",
+    "breakfast": "śniadanie",
+    "starter": "przystawka",
+    "other": "inne",
+
     // --- why the engine picked something (see lib/reasons.ts) ---
     "already planned": "już zaplanowane",
     "planned today": "zaplanowane dziś",

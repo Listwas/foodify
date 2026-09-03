@@ -4,6 +4,7 @@ import { addDays, iso, rangeLabel, startOfWeek, weekdayShort } from "../../lib/d
 import { splitEntry } from "../../lib/quantity"
 import { buildShoppingWeek, shoppingText, type ShoppingLine } from "../../lib/shopping"
 import { useT } from "../../lib/i18n"
+import { useTranslated } from "../../lib/translate"
 import {
     addExtra, clearShoppingTicks, dropLine, editExtra, removeExtra, restoreAllLines,
     restoreLine, setChecks, setExtraChecked, useAppState,
@@ -101,6 +102,11 @@ function ShoppingList() {
         showToast(copied ? t("List copied") : t("Couldn't copy the list"), copied ? "success" : "error")
     }
 
+    const tr = useTranslated([
+        ...week.sections.flatMap(x => x.lines).map(l => l.name),
+        ...week.meals.map(m => m.recipe.title),
+    ])
+
     const thisWeek = from === iso(startOfWeek(new Date()))
     const nothingHere = week.total === 0 && week.meals.length === 0
 
@@ -138,7 +144,7 @@ function ShoppingList() {
                             <span className={s.mealDay}>
                                 {weekdayShort(new Date(`${meal.date}T00:00`))}
                             </span>
-                            <span className={s.mealTitle}>{meal.recipe.title}</span>
+                            <span className={s.mealTitle}>{tr(meal.recipe.title)}</span>
                             <span className={s.mealServes}>
                                 {meal.cooked ? t("cooked") : t("for {n}", { n: meal.servings })}
                             </span>
@@ -247,7 +253,7 @@ function ShoppingList() {
                                                     checked={line.checked}
                                                     onChange={() => toggle(line)}
                                                 />
-                                                <span className={s.name}>{line.name}</span>
+                                                <span className={s.name}>{tr(line.name)}</span>
                                                 {/* Empty for a pinch or a handful. Inventing a
                                                     number there would be worse than saying
                                                     nothing. */}

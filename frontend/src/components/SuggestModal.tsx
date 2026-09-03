@@ -110,7 +110,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     aria-label="protein filter"
                 >
                     <option value="">{t("Any protein")}</option>
-                    {proteins.map(p => <option key={p} value={p}>{p}</option>)}
+                    {proteins.map(p => <option key={p} value={p}>{t(p)}</option>)}
                 </select>
                 <select
                     className="field"
@@ -119,7 +119,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     aria-label="time filter"
                 >
                     <option value="">{t("Any time")}</option>
-                    {TIME_OPTIONS.map(t => <option key={t} value={t}>≤ {t} min</option>)}
+                    {TIME_OPTIONS.map(m => <option key={m} value={m}>≤ {m} {t("min")}</option>)}
                 </select>
             </div>
 
@@ -137,7 +137,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     <div className={s.info}>
                         <h3>{candidate.title}</h3>
                         <div className={s.meta}>
-                            {candidate.protein_type}
+                            {t(candidate.protein_type ?? "")}
                             {candidate.prep_time_minutes != null && <> · {candidate.prep_time_minutes} {t("min")}</>}
                         </div>
                         {macroLine(candidate) && <div className="macros">{macroLine(candidate)}</div>}

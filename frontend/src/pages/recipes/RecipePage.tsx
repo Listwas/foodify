@@ -8,6 +8,7 @@ import {
 } from "../../store"
 import { BASE_SERVINGS } from "../../store/types"
 import { useT } from "../../lib/i18n"
+import { useTranslated } from "../../lib/translate"
 import { useToast } from "../../context/ToastContext"
 import { useRecipe, useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
@@ -29,6 +30,9 @@ function RecipePage() {
     const state = useAppState()
     const recipes = useRecipeMap()
     const r = useRecipe(Number(id))
+    // the recipe itself is data, not interface, so it goes through the
+    // translation service rather than the dictionary
+    const tr = useTranslated([r?.title, r?.instructions, ...(r?.ingredients ?? []).map(i => i.name)])
 
     if (!r) {
         return (
@@ -153,7 +157,7 @@ function RecipePage() {
                 </div>
 
                 <div className={s.heroBody}>
-                    <h1>{r.title}</h1>
+                    <h1>{tr(r.title)}</h1>
                     {(r.edited || r.copied_from || hidden) && (
                         <div className={s.marks}>
                             {hidden && (
@@ -193,7 +197,7 @@ function RecipePage() {
                         </div>
                     )}
                     <div className={s.meta}>
-                        {r.protein_type}
+                        {t(r.protein_type ?? "")}
                         {r.prep_time_minutes != null && <> · {r.prep_time_minutes} {t("min")}</>}
                         {r.source === "ai" && <> · {t("generated")}</>}
                     </div>
@@ -227,6 +231,7 @@ function RecipePage() {
                             <li key={i.id}>
                                 {ingredientLabel({
                                     ...i,
+                                    name: tr(i.name),
                                     quantity: kitchenQuantity(i.quantity, servings / BASE_SERVINGS),
                                 })}
                             </li>
@@ -236,7 +241,7 @@ function RecipePage() {
                 <section>
                     <h2>{t("Instructions")}</h2>
                     <div className={s.instructions}>
-                        {metricProse(r.instructions) || t("No instructions recorded.")}
+                        {metricProse(tr(r.instructions)) || t("No instructions recorded.")}
                     </div>
                 </section>
             </div>

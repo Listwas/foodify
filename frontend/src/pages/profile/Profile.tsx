@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react"
 import type { Stance } from "../../lib/types"
 import { LANGUAGES, useT, useLang, setLang, type Lang } from "../../lib/i18n"
+import { useTranslated } from "../../lib/translate"
 import { useToast } from "../../context/ToastContext"
 import {
     addPref, exportState, importState, removePref, resetState, useAppState,
@@ -228,6 +229,14 @@ function Profile() {
         [index]
     )
 
+    // The ingredient names the engine surfaces are library data, so they get
+    // translated. What the user typed into their own preferences does not:
+    // those have to keep matching the English terms the engine indexes and
+    // the type-ahead offers.
+    const tr = useTranslated([
+        ...taste.likes.map(l => l.name), ...taste.dislikes.map(l => l.name),
+    ])
+
     const likes = state.prefs.filter(p => p.stance === "like")
     const avoids = state.prefs.filter(p => p.stance === "avoid")
 
@@ -291,14 +300,14 @@ function Profile() {
                         {taste.likes.length > 0 && (
                             <LearnedRow label={t("drawn to")}>
                                 {taste.likes.map(l => (
-                                    <span key={l.name} className={`${s.tag} ${s.tagLike}`}>{l.name}</span>
+                                    <span key={l.name} className={`${s.tag} ${s.tagLike}`}>{tr(l.name)}</span>
                                 ))}
                             </LearnedRow>
                         )}
                         {taste.dislikes.length > 0 && (
                             <LearnedRow label={t("steering clear of")}>
                                 {taste.dislikes.map(l => (
-                                    <span key={l.name} className={`${s.tag} ${s.tagAvoid}`}>{l.name}</span>
+                                    <span key={l.name} className={`${s.tag} ${s.tagAvoid}`}>{tr(l.name)}</span>
                                 ))}
                             </LearnedRow>
                         )}
@@ -306,7 +315,7 @@ function Profile() {
                             <LearnedRow label={t("recently")}>
                                 {Object.entries(taste.protein_share).map(([p, share]) => (
                                     <span key={p} className={s.tag}>
-                                        {p} {Math.round(share * 100)}%
+                                        {t(p)} {Math.round(share * 100)}%
                                     </span>
                                 ))}
                             </LearnedRow>

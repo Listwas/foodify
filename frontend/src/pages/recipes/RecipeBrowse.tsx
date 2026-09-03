@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import type { RecipeFull } from "../../lib/types"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
 import { useT } from "../../lib/i18n"
+import { useTranslated } from "../../lib/translate"
 import { useToast } from "../../context/ToastContext"
 import { setFeedback, clearFeedback, useAppState } from "../../store"
 import { useLibrary, useProteinTypes } from "../../data/library"
@@ -171,6 +172,10 @@ function RecipeBrowse() {
         showToast(t("Back in the library"))
     }
 
+    // Titles only, and only the cards actually on screen. Sending the whole
+    // library at once would spend a day's free quota on a single scroll.
+    const tr = useTranslated(results.slice(0, shown).map(r => r.title))
+
     const clearFilters = () => { setProtein(""); setNutrition(""); setStatus("") }
 
     return (
@@ -305,9 +310,9 @@ function RecipeBrowse() {
                                     )}
                                 </div>
                                 <div className={s.cardBody}>
-                                    <div className={s.cardTitle}>{r.title}</div>
+                                    <div className={s.cardTitle}>{tr(r.title)}</div>
                                     <div className={s.cardMeta}>
-                                        {r.protein_type}
+                                        {t(r.protein_type ?? "")}
                                         {r.prep_time_minutes != null && <> · {r.prep_time_minutes} {t("min")}</>}
                                     </div>
                                     {macroLine(r) && <div className="macros">{macroLine(r)}</div>}
