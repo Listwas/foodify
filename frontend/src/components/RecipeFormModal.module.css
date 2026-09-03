@@ -110,7 +110,7 @@
     background: linear-gradient(to top, var(--bg-5) 72%, transparent);
 }
 
-.actions .btn { flex: none; }
+.actions :global(.btn) { flex: none; }
 
 @media (max-width: 560px) {
     .row { grid-template-columns: 62px 62px 1fr 34px; }

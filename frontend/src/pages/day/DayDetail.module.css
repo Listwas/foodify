@@ -178,3 +178,16 @@
     .heroImg { width: 100%; }
     .columns { grid-template-columns: 1fr; gap: 20px; }
 }
+
+/* Heading and its translate button on one line, wrapping rather than
+   colliding when the label is long. */
+.methodHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    margin-bottom: 10px;
+}
+
+.methodHead h2, .methodHead h4 { margin: 0; }

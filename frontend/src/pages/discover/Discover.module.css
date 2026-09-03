@@ -348,3 +348,16 @@
     .controls { margin-top: 18px; }
     .stamp { top: 12px; left: 22%; }
 }
+
+/* Heading and its translate button on one line, wrapping rather than
+   colliding when the label is long. */
+.methodHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    margin-bottom: 10px;
+}
+
+.methodHead h2, .methodHead h4 { margin: 0; }

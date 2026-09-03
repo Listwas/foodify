@@ -3,7 +3,6 @@ import { Link } from "react-router-dom"
 import type { RecipeFull } from "../../lib/types"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
 import { useT } from "../../lib/i18n"
-import { useTranslated } from "../../lib/translate"
 import { useToast } from "../../context/ToastContext"
 import { setFeedback, clearFeedback, useAppState } from "../../store"
 import { useLibrary, useProteinTypes } from "../../data/library"
@@ -172,10 +171,6 @@ function RecipeBrowse() {
         showToast(t("Back in the library"))
     }
 
-    // Titles only, and only the cards actually on screen. Sending the whole
-    // library at once would spend a day's free quota on a single scroll.
-    const tr = useTranslated(results.slice(0, shown).map(r => r.title))
-
     const clearFilters = () => { setProtein(""); setNutrition(""); setStatus("") }
 
     return (
@@ -205,7 +200,7 @@ function RecipeBrowse() {
                         aria-label={t("Search recipes…")}
                     />
                     {q && (
-                        <button className={s.searchClear} onClick={() => setQ("")} aria-label="clear search">
+                        <button className={s.searchClear} onClick={() => setQ("")} aria-label={t("Clear all")}>
                             <Icon name="close" size={15} />
                         </button>
                     )}
@@ -310,7 +305,7 @@ function RecipeBrowse() {
                                     )}
                                 </div>
                                 <div className={s.cardBody}>
-                                    <div className={`${s.cardTitle} ${tr.pending ? "translating" : ""}`}>{tr(r.title)}</div>
+                                    <div className={s.cardTitle}>{r.title}</div>
                                     <div className={s.cardMeta}>
                                         {t(r.protein_type ?? "")}
                                         {r.prep_time_minutes != null && <> · {r.prep_time_minutes} {t("min")}</>}
@@ -343,7 +338,7 @@ function RecipeBrowse() {
                                                 }
                                             }}
                                             aria-pressed={r.verdict === "like"}
-                                            aria-label={r.verdict === "like" ? "remove your like" : "like this recipe"}
+                                            aria-label={r.verdict === "like" ? t("Remove your like") : t("Like this")}
                                             data-tip={r.verdict === "like" ? t("Remove your like") : t("Like this")}
                                             data-tip-below
                                         >
@@ -352,16 +347,19 @@ function RecipeBrowse() {
                                         <button
                                             className={`${s.cardBtn} ${s.planBtn}`}
                                             onClick={() => setPlanning({ id: r.id, title: r.title })}
+                                            // the visible label steps aside on a narrow card, so
+                                            // the accessible name can't depend on it
+                                            aria-label={t("Add to a day on your plan")}
                                             data-tip={t("Add to a day on your plan")}
                                             data-tip-below
                                         >
                                             <Icon name="plus" size={15} />
-                                            {t("Plan this")}
+                                            <span className={s.btnLabel}>{t("Plan it")}</span>
                                         </button>
                                         <button
                                             className={`${s.cardBtn} ${s.iconOnly}`}
                                             onClick={() => hide(r.id)}
-                                            aria-label="hide this recipe"
+                                            aria-label={t("Never show me this")}
                                             data-tip={t("Never show me this")}
                                             data-tip-below
                                         >

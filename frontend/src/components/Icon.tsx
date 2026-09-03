@@ -53,6 +53,11 @@ const PATHS = {
             <path d="M20.5 15.5 15.5 10.5 5 20" /></>
     ),
     download: <path d="M12 4v12m-4.5-4.5L12 16l4.5-4.5M4 19.5h16" />,
+    language: (
+        <><path d="M3 6h10M8 4v2c0 4.5-2.2 8-5 10" />
+            <path d="M5.5 11c1.6 2.4 3.8 4.2 6.5 5.2" />
+            <path d="M12.5 20.5 16.5 10l4 10.5M14 17.5h5" /></>
+    ),
 } satisfies Record<string, ReactNode>
 
 export type IconName = keyof typeof PATHS

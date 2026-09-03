@@ -1,27 +1,21 @@
 /**
- * Translating the cookbook itself.
+ * Translating the long texts, on request.
  *
- * The interface is translated from a dictionary, but the recipes are data:
- * 511 titles, 753 ingredient names and a method each, none of which can be
- * written out by hand. So they go through MyMemory, the same keyless service
- * the booker project uses, called straight from the browser because it sends
- * CORS headers and this app has no server to proxy through.
+ * Everything short — the interface, the categories, the ingredient names — is
+ * translated from our own word lists, instantly and offline. This module is
+ * only for the one thing those can't cover: the method, which is prose, runs
+ * to a few thousand characters, and is different in every recipe.
  *
- * The scarce resource is quota, not time: anonymous use gets a few thousand
- * characters a day. Two things follow from that, and they shape everything
- * here. Translations are cached **permanently**, in their own database, so a
- * string is ever paid for once. And they are cached **per string** rather than
- * per recipe, so the "Salt" in one recipe is the "Salt" in the other two
- * hundred — which is what makes an ingredient list nearly free after the first
- * few recipes.
+ * It is deliberately **not** automatic. A machine translation of a paragraph
+ * is worth having when you want it and noise when you don't, so it happens on
+ * a button press, the way booker translates a book description. That also
+ * keeps the free daily allowance for the recipes somebody actually reads.
  *
- * Nothing here is allowed to break the page. Every failure — quota gone,
- * offline, service down — resolves to the original English, which is a real
- * recipe that someone can still cook from.
+ * MyMemory, keyless and CORS-open, called straight from the browser because
+ * this app has no server to proxy through. Every failure resolves to the
+ * original English, which is still a recipe someone can cook from.
  */
-
-import { useEffect, useState, useSyncExternalStore } from "react"
-import { knownFood } from "./foodwords"
+import { useCallback, useEffect, useState } from "react"
 import { useLang } from "./i18n"
 
 const DB_NAME = "foodify-i18n"
@@ -30,7 +24,6 @@ const STORE = "translations"
 const CHUNK_LIMIT = 450
 /** Past this a method is long enough that nobody reads to the end anyway. */
 const MAX_SOURCE = 2500
-const MAX_PARALLEL = 3
 
 let db: Promise<IDBDatabase> | null = null
 
@@ -53,29 +46,23 @@ function open(): Promise<IDBDatabase> {
 
 const key = (text: string, lang: string) => `${lang}|${text}`
 
-async function readCache(keys: string[]): Promise<Map<string, string>> {
-    const found = new Map<string, string>()
+async function readCache(k: string): Promise<string | null> {
     try {
         const store = (await open()).transaction(STORE, "readonly").objectStore(STORE)
-        await Promise.all(keys.map(k => new Promise<void>(resolve => {
+        return await new Promise(resolve => {
             const req = store.get(k)
-            req.onsuccess = () => {
-                if (typeof req.result === "string") found.set(k, req.result)
-                resolve()
-            }
-            req.onerror = () => resolve()
-        })))
+            req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null)
+            req.onerror = () => resolve(null)
+        })
     } catch {
-        // no IndexedDB (private mode); every lookup is simply a miss
+        return null // no IndexedDB (private mode); every lookup is a miss
     }
-    return found
 }
 
-async function writeCache(entries: [string, string][]): Promise<void> {
-    if (!entries.length) return
+async function writeCache(k: string, value: string): Promise<void> {
     try {
         const store = (await open()).transaction(STORE, "readwrite").objectStore(STORE)
-        for (const [k, value] of entries) store.put(value, k)
+        store.put(value, k)
     } catch { /* a cache that can't be written still works, just slower */ }
 }
 
@@ -113,42 +100,6 @@ export function splitChunks(text: string, limit = CHUNK_LIMIT): string[] {
 
 /** Set once the service says we're done for the day, to stop asking. */
 let exhausted = false
-/** How many requests are out right now, so the UI can say it's working. */
-let inFlight = 0
-const watchers = new Set<() => void>()
-
-const announce = () => watchers.forEach(w => w())
-
-function watchStatus(listener: () => void) {
-    watchers.add(listener)
-    return () => void watchers.delete(listener)
-}
-
-/**
- * Whether anything is being translated, and whether the day's allowance is
- * gone. Both worth saying out loud: text that is about to change should look
- * like it, and text that is staying English should say why.
- */
-export function useTranslateStatus(): { busy: boolean; outOfQuota: boolean } {
-    const snapshot = useSyncExternalStore(
-        watchStatus,
-        () => `${inFlight}|${exhausted}`,
-        () => "0|false",
-    )
-    const [count, spent] = snapshot.split("|")
-    return { busy: Number(count) > 0, outOfQuota: spent === "true" }
-}
-
-async function fetchOne(text: string, lang: string): Promise<string> {
-    inFlight += 1
-    announce()
-    try {
-        return await request(text, lang)
-    } finally {
-        inFlight -= 1
-        announce()
-    }
-}
 
 async function request(text: string, lang: string): Promise<string> {
     const parts: string[] = []
@@ -168,7 +119,6 @@ async function request(text: string, lang: string): Promise<string> {
         // in the field where the translation should be
         if (!out || out.toUpperCase().includes("MYMEMORY WARNING")) {
             exhausted = true
-            announce()
             throw new Error("quota exhausted")
         }
         parts.push(out)
@@ -176,116 +126,84 @@ async function request(text: string, lang: string): Promise<string> {
     return parts.join(" ")
 }
 
-/** In flight right now, so two cards asking for the same title ask once. */
+/** In flight right now, so two views of one recipe ask once. */
 const pending = new Map<string, Promise<string>>()
 
-/**
- * Translate a batch, returning what's known now and fetching what isn't.
- *
- * Resolves to a map from source text to translation. Anything that couldn't be
- * translated is simply absent, and callers fall back to the original.
- */
-export async function translateBatch(
-    texts: string[], lang: string,
-): Promise<Map<string, string>> {
-    const wanted = [...new Set(texts.map(s => s.trim()).filter(Boolean))]
-    const out = new Map<string, string>()
-    if (!wanted.length || lang === "en") return out
+export async function translateText(text: string, lang: string): Promise<string> {
+    const source = text.trim()
+    if (!source || lang === "en") return text
 
-    // the house words first: better than the service on a bare ingredient
-    // name, and they are most of what a recipe asks for
-    const unknown: string[] = []
-    for (const text of wanted) {
-        const known = knownFood(text, lang)
-        if (known) out.set(text, known)
-        else unknown.push(text)
+    const k = key(source, lang)
+    const cached = await readCache(k)
+    if (cached) return cached
+    if (exhausted) throw new Error("quota exhausted")
+
+    let inFlight = pending.get(k)
+    if (!inFlight) {
+        inFlight = request(source, lang)
+        pending.set(k, inFlight)
     }
-
-    const cached = await readCache(unknown.map(s => key(s, lang)))
-    const misses: string[] = []
-    for (const text of unknown) {
-        const hit = cached.get(key(text, lang))
-        if (hit) out.set(text, hit)
-        else misses.push(text)
+    try {
+        const translated = await inFlight
+        void writeCache(k, translated)
+        return translated
+    } finally {
+        pending.delete(k)
     }
-    if (!misses.length || exhausted) return out
-
-    const fresh: [string, string][] = []
-    const queue = [...misses]
-    const workers = Array.from({ length: Math.min(MAX_PARALLEL, queue.length) }, async () => {
-        while (queue.length && !exhausted) {
-            const text = queue.shift()!
-            const k = key(text, lang)
-            try {
-                let inFlight = pending.get(k)
-                if (!inFlight) {
-                    inFlight = fetchOne(text, lang)
-                    pending.set(k, inFlight)
-                }
-                const translated = await inFlight
-                pending.delete(k)
-                out.set(text, translated)
-                fresh.push([k, translated])
-            } catch {
-                pending.delete(k)
-                // leave it out; the caller shows the English
-            }
-        }
-    })
-    await Promise.all(workers)
-    await writeCache(fresh)
-    return out
 }
 
-/** Whether the day's free allowance has already run out. */
-export const quotaSpent = () => exhausted
-
-/**
- * Translate what this component is about to show.
- *
- * Returns a lookup that hands back the English until the Polish arrives, so
- * the page renders immediately and fills in rather than blocking on a network
- * call. In English it is the identity function and nothing is ever requested.
- */
-export interface Translator {
-    (text: string): string
-    /** True while this batch is still out. Text on screen is still English. */
-    pending: boolean
+export interface Translatable {
+    /** The text to render right now. */
+    shown: string
+    /** Whether `shown` is the translation rather than the original. */
+    isTranslated: boolean
+    busy: boolean
+    failed: boolean
+    /** False in English, or when there is nothing to translate. */
+    available: boolean
+    toggle: () => void
 }
 
-export function useTranslated(texts: (string | null | undefined)[]): Translator {
+/**
+ * A long text that can be translated on request, and put back.
+ *
+ * Starts on the original every time. Translating is a thing the reader asks
+ * for, so it is never the state they arrive in — but once a recipe has been
+ * translated the answer is cached, and asking again is instant and free.
+ */
+export function useTranslatable(text: string | undefined): Translatable {
     const lang = useLang()
-    const [map, setMap] = useState<Map<string, string>>(EMPTY)
-    const [pending, setPending] = useState(false)
+    const source = (text ?? "").trim()
+    const [translated, setTranslated] = useState<string | null>(null)
+    const [showing, setShowing] = useState(false)
+    const [busy, setBusy] = useState(false)
+    const [failed, setFailed] = useState(false)
 
-    const wanted = texts.filter((s): s is string => !!s && !!s.trim())
-    // A stable dependency, since the array is new on every render. The
-    // separator must be something no recipe can contain, or a two-word
-    // ingredient would come back out of here as two ingredients.
-    const signature = wanted.join(SEP)
-
+    // a different recipe is a different text: drop everything
     useEffect(() => {
-        if (lang === "en" || !signature) {
-            setMap(EMPTY)
-            setPending(false)
-            return
-        }
-        let alive = true
-        setPending(true)
-        void translateBatch(signature.split(SEP), lang).then(result => {
-            if (!alive) return
-            setMap(result)
-            setPending(false)
-        })
-        return () => { alive = false }
-    }, [lang, signature])
+        setTranslated(null)
+        setShowing(false)
+        setBusy(false)
+        setFailed(false)
+    }, [source, lang])
 
-    const translator = ((text: string) => map.get(text.trim()) ?? text) as Translator
-    translator.pending = pending
-    return translator
+    const toggle = useCallback(() => {
+        if (showing) { setShowing(false); return }
+        if (translated) { setShowing(true); return }
+        setBusy(true)
+        setFailed(false)
+        translateText(source, lang).then(
+            result => { setTranslated(result); setShowing(true); setBusy(false) },
+            () => { setFailed(true); setBusy(false) },
+        )
+    }, [showing, translated, source, lang])
+
+    return {
+        shown: showing && translated ? translated : text ?? "",
+        isTranslated: showing && !!translated,
+        busy,
+        failed,
+        available: lang !== "en" && source.length > 0,
+        toggle,
+    }
 }
-
-const EMPTY: Map<string, string> = new Map()
-
-/** Joins the batch into one dependency string; cannot occur in a recipe. */
-const SEP = "\u0000"

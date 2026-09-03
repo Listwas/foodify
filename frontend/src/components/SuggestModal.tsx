@@ -107,7 +107,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     className="field"
                     value={protein}
                     onChange={e => resetFilters(() => setProtein(e.target.value))}
-                    aria-label="protein filter"
+                    aria-label={t("Any protein")}
                 >
                     <option value="">{t("Any protein")}</option>
                     {proteins.map(p => <option key={p} value={p}>{t(p)}</option>)}
@@ -116,7 +116,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     className="field"
                     value={maxTime}
                     onChange={e => resetFilters(() => setMaxTime(e.target.value))}
-                    aria-label="time filter"
+                    aria-label={t("Any time")}
                 >
                     <option value="">{t("Any time")}</option>
                     {TIME_OPTIONS.map(m => <option key={m} value={m}>≤ {m} {t("min")}</option>)}

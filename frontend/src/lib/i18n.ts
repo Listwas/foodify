@@ -180,6 +180,8 @@ const DICT: Record<string, Entry> = {
     "Hidden. It won't be suggested again.": "Ukryte. Nie będzie już proponowane.",
     "Keep it out of the library and the deck": "Trzymaj z dala od biblioteki i talii",
     "Plan this": "Zaplanuj to",
+    // shorter, for the card button, where the dish is already named above
+    "Plan it": "Zaplanuj",
     "Photo": "Zdjęcie",
     "Change this photo": "Zmień to zdjęcie",
     "stock photo": "zdjęcie stockowe",
@@ -352,7 +354,12 @@ const DICT: Record<string, Entry> = {
     "Switch to {theme}": "Przełącz na {theme}",
     "Language": "Język",
     "Translating…": "Tłumaczę…",
-    "Translation limit reached for today": "Dzienny limit tłumaczeń wyczerpany",
+    "Translate": "Przetłumacz",
+    "Show the original": "Pokaż oryginał",
+    "Try translating again": "Spróbuj ponownie",
+    "Couldn't translate that": "Nie udało się przetłumaczyć",
+    "Machine translation, so read it with that in mind.":
+        "Tłumaczenie maszynowe, czytaj z rezerwą.",
     "The app's own words. Recipes stay in English.":
         "Język aplikacji. Przepisy zostają po angielsku.",
     "Your data": "Twoje dane",

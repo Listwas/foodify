@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Outlet, Link } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
 import { useT } from './lib/i18n'
 import Nav from './components/Nav'
-import TranslationStatus from './components/TranslationStatus'
 import WeekView from './pages/week/WeekView'
 import { hydrate } from './store'
 import { loadRecipes } from './data/library'
@@ -25,7 +24,6 @@ function Layout() {
       <Suspense fallback={null}>
         <Outlet />
       </Suspense>
-      <TranslationStatus />
     </>
   )
 }

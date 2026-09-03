@@ -8,7 +8,9 @@ import {
 } from "../../store"
 import { BASE_SERVINGS } from "../../store/types"
 import { useT } from "../../lib/i18n"
-import { useTranslated } from "../../lib/translate"
+import { useTranslatable } from "../../lib/translate"
+import { useFoodWord } from "../../lib/foodwords"
+import TranslateToggle from "../../components/TranslateToggle"
 import { useToast } from "../../context/ToastContext"
 import { useRecipe, useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
@@ -30,9 +32,10 @@ function RecipePage() {
     const state = useAppState()
     const recipes = useRecipeMap()
     const r = useRecipe(Number(id))
-    // the recipe itself is data, not interface, so it goes through the
-    // translation service rather than the dictionary
-    const tr = useTranslated([r?.title, r?.instructions, ...(r?.ingredients ?? []).map(i => i.name)])
+    // Ingredients come from our own word list: instant, and right. The
+    // method is prose and goes to the service, but only when asked.
+    const food = useFoodWord()
+    const method = useTranslatable(r?.instructions)
 
     if (!r) {
         return (
@@ -157,7 +160,7 @@ function RecipePage() {
                 </div>
 
                 <div className={s.heroBody}>
-                    <h1 className={tr.pending ? "translating" : ""}>{tr(r.title)}</h1>
+                    <h1>{r.title}</h1>
                     {(r.edited || r.copied_from || hidden) && (
                         <div className={s.marks}>
                             {hidden && (
@@ -226,12 +229,12 @@ function RecipePage() {
                         base={BASE_SERVINGS}
                         onChange={next => setRecipeServings(r.id, next)}
                     />
-                    <ul className={`${s.ingredients} ${tr.pending ? "translating" : ""}`}>
+                    <ul className={s.ingredients}>
                         {r.ingredients.map(i => (
                             <li key={i.id}>
                                 {ingredientLabel({
                                     ...i,
-                                    name: tr(i.name),
+                                    name: food(i.name),
                                     quantity: kitchenQuantity(i.quantity, servings / BASE_SERVINGS),
                                 })}
                             </li>
@@ -239,9 +242,12 @@ function RecipePage() {
                     </ul>
                 </section>
                 <section>
-                    <h2>{t("Instructions")}</h2>
-                    <div className={`${s.instructions} ${tr.pending ? "translating" : ""}`}>
-                        {metricProse(tr(r.instructions)) || t("No instructions recorded.")}
+                    <div className={s.methodHead}>
+                        <h2>{t("Instructions")}</h2>
+                        <TranslateToggle state={method} />
+                    </div>
+                    <div className={`${s.instructions} ${method.busy ? "translating" : ""}`}>
+                        {metricProse(method.shown) || t("No instructions recorded.")}
                     </div>
                 </section>
             </div>

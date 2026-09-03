@@ -133,7 +133,7 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
                         onClick={() =>
                             onChange({ image_url: null, image_is_stock: false, image_attribution: null })
                         }
-                        aria-label="remove the photo"
+                        aria-label={t("Remove the photo")}
                         data-tip={t("Remove the photo")}
                     >
                         <Icon name="close" size={16} />

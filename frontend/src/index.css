@@ -268,13 +268,22 @@ input.field:focus, select.field:focus, textarea.field:focus {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Recipe text waiting on a translation. Dimmed rather than hidden, because
+/* Text with a translation on the way. It breathes rather than disappearing:
    the English underneath is a perfectly good recipe and the wait is a second
-   or two — replacing it with a skeleton would take away something readable
-   and give back nothing. */
+   or two, so a skeleton would take away something readable and give back
+   nothing. The pulse is what says the words are about to change. */
 .translating {
-    opacity: 0.5;
-    transition: opacity 0.25s ease;
+    animation: translating 1.4s ease-in-out infinite;
+}
+
+@keyframes translating {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.8; }
+}
+
+/* A frozen half-fade would just look broken, so hold it steady instead. */
+@media (prefers-reduced-motion: reduce) {
+    .translating { animation: none; opacity: 0.55; }
 }
 
 .meal-img { background: var(--bg-10); }

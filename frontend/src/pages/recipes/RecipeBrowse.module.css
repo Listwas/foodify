@@ -140,7 +140,7 @@
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: var(--s3);
 }
 
@@ -149,6 +149,7 @@
    edges instead. */
 .card {
     position: relative;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     background: var(--bg-5);
@@ -252,18 +253,34 @@
 .cardActions > *:first-child { border-bottom-left-radius: calc(var(--r2) - 1px); }
 .cardActions > *:last-child { border-bottom-right-radius: calc(var(--r2) - 1px); }
 
+/* One line, always. A label that outgrows the button is a label problem, not
+   a layout problem — letting it wrap silently doubles the height of every
+   card in the grid, which is what "Zaplanuj to" did in Polish. */
 .cardBtn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
     flex: 1;
+    min-width: 0;
     padding: 9px 8px;
     border: 0;
     background: none;
     color: var(--text-dim);
     font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     cursor: pointer;
+}
+
+/* Below this the label cannot fit in any language, so it steps aside and
+   leaves the icon, which still carries a hover label and an aria-label. This
+   is measured against the card, not the window: a card is narrow because the
+   grid squeezed it, which has nothing to do with how wide the screen is. */
+@container (max-width: 210px) {
+    .btnLabel { display: none; }
+    .cardBtn { padding: 9px 4px; }
 }
 
 .cardBtn:hover { background: var(--bg-10); color: var(--text); }

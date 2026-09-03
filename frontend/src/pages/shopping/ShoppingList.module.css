@@ -242,7 +242,7 @@
     min-width: 0;
 }
 
-.editRow .btn { padding: 8px 10px; }
+.editRow :global(.btn) { padding: 8px 10px; }
 
 .name {
     flex: 1;

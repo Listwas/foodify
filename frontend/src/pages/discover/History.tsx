@@ -141,7 +141,7 @@ function History() {
                                 <button
                                     className="btn ghost icon"
                                     onClick={() => reset(r.id)}
-                                    aria-label="forget this decision"
+                                    aria-label={t("Forget this decision")}
                                     data-tip={t("Forget this decision")}
                                 >
                                     <Icon name="undo" size={16} />

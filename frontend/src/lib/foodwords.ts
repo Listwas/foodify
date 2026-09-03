@@ -9,11 +9,15 @@
  * exactly where machine translation is weakest, and exactly where being wrong
  * is most visible.
  *
- * Quota: 80 names account for 63% of every ingredient mention in the library,
- * because every second recipe wants onion, garlic and salt. Answering those
- * from here means the free daily allowance is spent on the long tail that
- * actually needs it.
+ * Reach: a few hundred names cover 84% of every ingredient mention in the
+ * library, because every second recipe wants onion, garlic and salt. That is
+ * what makes a hand-written list practical here at all — the shopping list and
+ * the ingredient panel are translated instantly, offline, with no request to
+ * make and no daily allowance to run out. A name that isn't here stays as the
+ * library wrote it, which on a shopping list is worth more than a guess.
  */
+
+import { useLang } from "./i18n"
 
 const PL: Record<string, string> = {
     // the constants of every recipe
@@ -216,6 +220,74 @@ const PL: Record<string, string> = {
     "strawberries": "truskawki",
     "coconut": "kokos",
     "olives": "oliwki",
+
+    // --- the long tail that still turns up often ---
+    "scotch bonnet": "papryczka scotch bonnet",
+    "tinned tomatos": "pomidory z puszki",
+    "plum tomatoes": "pomidory śliwkowe",
+    "sun-dried tomatoes": "suszone pomidory",
+    "sundried tomatoes": "suszone pomidory",
+    "tomato sauce": "sos pomidorowy",
+    "tomato ketchup": "ketchup",
+    "basil leaves": "listki bazylii",
+    "coriander leaves": "listki kolendry",
+    "dried oregano": "suszone oregano",
+    "kosher salt": "sól gruboziarnista",
+    "sea salt": "sól morska",
+    "hotsauce": "ostry sos",
+    "garlic powder": "czosnek granulowany",
+    "onion powder": "cebula granulowana",
+    "ground ginger": "imbir mielony",
+    "ground coriander": "kolendra mielona",
+    "cumin seeds": "nasiona kminu rzymskiego",
+    "chilli flakes": "płatki chilli",
+    "chili flakes": "płatki chilli",
+    "red pepper flakes": "płatki chilli",
+    "chili powder": "chilli w proszku",
+    "cinnamon stick": "laska cynamonu",
+    "harissa spice": "przyprawa harissa",
+    "pita bread": "chleb pita",
+    "baguette": "bagietka",
+    "heavy cream": "śmietanka kremówka",
+    "jasmine rice": "ryż jaśminowy",
+    "macaroni": "makaron rurki",
+    "bean sprouts": "kiełki fasoli",
+    "thai red curry paste": "czerwona pasta curry",
+    "red curry paste": "czerwona pasta curry",
+    "thai green curry paste": "zielona pasta curry",
+    "tamarind paste": "pasta tamaryndowa",
+    "chicken stock cube": "kostka rosołowa",
+    "black olives": "czarne oliwki",
+    "green olives": "zielone oliwki",
+    "dry sherry": "wytrawna sherry",
+    "dry white wine": "wytrawne białe wino",
+    "apple cider vinegar": "ocet jabłkowy",
+    "sesame seed": "sezam",
+    "pine nuts": "orzeszki piniowe",
+    "white cabbage": "kapusta biała",
+    "red cabbage": "kapusta czerwona",
+    "kale": "jarmuż",
+    "rocket": "rukola",
+    "fennel": "koper włoski",
+    "avocado": "awokado",
+    "egg plants": "bakłażany",
+    "challots": "szalotka",
+    "lamb mince": "mielona jagnięcina",
+    "lamb leg": "udziec jagnięcy",
+    "chicken legs": "nogi z kurczaka",
+    "ground pork": "mielona wieprzowina",
+    "minced pork": "mielona wieprzowina",
+    "sirloin steak": "polędwica wołowa",
+    "beef brisket": "mostek wołowy",
+    "raw king prawns": "surowe krewetki królewskie",
+    "squid": "kalmary",
+    "lard": "smalec",
+    "parmesan cheese": "parmezan",
+    "cannellini beans": "fasola cannellini",
+    "black beans": "czarna fasola",
+    "butter beans": "fasola biała",
+    "dijon mustard": "musztarda dijon",
+    "rapeseed oil": "olej rzepakowy",
 }
 
 /**
@@ -230,4 +302,16 @@ export function knownFood(name: string, lang: string): string | undefined {
     return PL[name.trim().toLowerCase()]
 }
 
-export const knownFoodCount = () => Object.keys(PL).length
+
+/**
+ * Ingredient names in the current language.
+ *
+ * Answers from the list above and nowhere else — no request, no waiting, no
+ * daily allowance to run out, and no chance of "Oil" coming back as crude oil.
+ * A name that isn't on the list stays as the library wrote it, which is worth
+ * more than a guess on a shopping list somebody is holding in a shop.
+ */
+export function useFoodWord(): (name: string) => string {
+    const lang = useLang()
+    return (name: string) => knownFood(name, lang) ?? name
+}

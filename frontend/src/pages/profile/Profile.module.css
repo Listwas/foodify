@@ -5,13 +5,19 @@
     max-width: 56ch;
 }
 
+/* Collapses when two columns genuinely stop fitting, rather than at a width
+   somebody guessed once in English. `min(300px, 100%)` keeps the track from
+   outgrowing a narrow phone. */
 .columns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
     gap: var(--s4);
 }
 
 .panel, .learned, .settings {
+    /* a grid item defaults to min-width: auto, which refuses to shrink below
+       its content — that is what pushed this panel off the page in Polish */
+    min-width: 0;
     background: var(--bg-5);
     border: 1px solid var(--bg-10);
     border-radius: var(--r2);
@@ -37,7 +43,11 @@
     align-items: center;
     margin-bottom: 12px;
 }
-.addRow input.field { flex: 1; min-width: 0; }
+/* `.field` is a global class, so naming it here would get hashed into a
+   selector that matches nothing — which is exactly what it did, and why this
+   row overflowed once the labels got longer. The element selector needs no
+   escaping. */
+.addRow > input { flex: 1; min-width: 0; }
 
 .hardToggle {
     display: flex;
@@ -216,8 +226,4 @@
     .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
     .learnedRow { grid-template-columns: 1fr; gap: 5px; }
     .learnedLabel { text-align: left; padding-top: 0; }
-}
-
-@media (max-width: 700px) {
-    .columns { grid-template-columns: 1fr; }
 }

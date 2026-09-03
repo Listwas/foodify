@@ -4,7 +4,9 @@ import { dayLong, iso, startOfWeek } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
 import { kitchenQuantity, metricProse } from "../../lib/quantity"
 import { useT } from "../../lib/i18n"
-import { useTranslated } from "../../lib/translate"
+import { useTranslatable } from "../../lib/translate"
+import { useFoodWord } from "../../lib/foodwords"
+import TranslateToggle from "../../components/TranslateToggle"
 import { useToast } from "../../context/ToastContext"
 import { markCooked, servingsFor, setCheck, setDayServings, useAppState } from "../../store"
 import { BASE_SERVINGS, groceryKey, planKey } from "../../store/types"
@@ -24,12 +26,10 @@ function DayDetail() {
     const [modal, setModal] = useState<"suggest" | "generate" | null>(null)
     const state = useAppState()
     const recipes = useRecipeMap()
-    const planned = date ? state.plan[planKey(date)] : undefined
-    const dish = planned && recipes.get(planned.recipeId)
-    const tr = useTranslated([dish?.title, dish?.instructions, ...(dish?.ingredients ?? []).map(i => i.name)])
-
     const slot = date ? state.plan[planKey(date)] : undefined
     const recipe = slot && recipes.get(slot.recipeId)
+    const food = useFoodWord()
+    const method = useTranslatable(recipe ? recipe.instructions : undefined)
 
     if (!date || !slot || !recipe) {
         return (
@@ -90,7 +90,7 @@ function DayDetail() {
                     />
                 )}
                 <div className={s.heroBody}>
-                    <h1 className={tr.pending ? "translating" : ""}>{tr(recipe.title)}</h1>
+                    <h1>{recipe.title}</h1>
                     <div className={s.meta}>
                         {t(recipe.protein_type ?? "")}
                         {recipe.prep_time_minutes != null && <> · {recipe.prep_time_minutes} {t("min")}</>}
@@ -120,7 +120,7 @@ function DayDetail() {
                         base={BASE_SERVINGS}
                         onChange={next => setDayServings(date, next, SLOT)}
                     />
-                    <ul className={`${s.checklist} ${tr.pending ? "translating" : ""}`}>
+                    <ul className={s.checklist}>
                         {items.map(item => (
                             <li key={item.id}>
                                 <label className={item.checked ? s.checked : ""}>
@@ -129,7 +129,7 @@ function DayDetail() {
                                         checked={item.checked}
                                         onChange={e => setCheck(date, SLOT, item.id, e.target.checked)}
                                     />
-                                    <span>{ingredientLabel({ ...item, name: tr(item.name) })}</span>
+                                    <span>{ingredientLabel({ ...item, name: food(item.name) })}</span>
                                 </label>
                             </li>
                         ))}
@@ -144,9 +144,12 @@ function DayDetail() {
                 </section>
 
                 <section className={s.instructions}>
-                    <h2>{t("Instructions")}</h2>
-                    <div className={`${s.instructionsText} ${tr.pending ? "translating" : ""}`}>
-                        {metricProse(tr(recipe.instructions)) || t("No instructions recorded.")}
+                    <div className={s.methodHead}>
+                        <h2>{t("Instructions")}</h2>
+                        <TranslateToggle state={method} />
+                    </div>
+                    <div className={`${s.instructionsText} ${method.busy ? "translating" : ""}`}>
+                        {metricProse(method.shown) || t("No instructions recorded.")}
                     </div>
                 </section>
             </div>
