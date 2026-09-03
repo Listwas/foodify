@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { addDays, iso } from "../lib/dates"
+import { useT, locale } from "../lib/i18n"
 import { useToast } from "../context/ToastContext"
 import { assign, useAppState } from "../store"
 import { planKey } from "../store/types"
@@ -19,6 +20,7 @@ const DAYS_AHEAD = 14
  *  and it actually being on the plan. */
 function DayPickerModal({ recipeId, recipeTitle, onClose }: Props) {
     const { showToast } = useToast()
+    const t = useT()
     const state = useAppState()
     const recipes = useRecipeMap()
 
@@ -29,7 +31,7 @@ function DayPickerModal({ recipeId, recipeTitle, onClose }: Props) {
 
     const pick = (dateIso: string) => {
         assign(recipeId, dateIso)
-        const when = new Date(`${dateIso}T00:00`).toLocaleDateString("en-GB", {
+        const when = new Date(`${dateIso}T00:00`).toLocaleDateString(locale(), {
             weekday: "long", day: "numeric", month: "short",
         })
         showToast(`${recipeTitle} → ${when}`)
@@ -37,8 +39,8 @@ function DayPickerModal({ recipeId, recipeTitle, onClose }: Props) {
     }
 
     return (
-        <Modal title={`Plan "${recipeTitle}"`} onClose={onClose}>
-            <p className={s.hint}>Pick a day. Anything already planned will be replaced.</p>
+        <Modal title={t("Plan this")} onClose={onClose}>
+            <p className={s.hint}>{t("Pick a day. Anything already planned will be replaced.")}</p>
             <div className={s.days}>
                 {days.map((day, i) => {
                     const dateIso = iso(day)
@@ -54,10 +56,10 @@ function DayPickerModal({ recipeId, recipeTitle, onClose }: Props) {
                         >
                             <span className={s.dayName}>
                                 {i === 0 ? "Today" : i === 1 ? "Tomorrow"
-                                    : day.toLocaleDateString("en-GB", { weekday: "short" })}
+                                    : day.toLocaleDateString(locale(), { weekday: "short" })}
                             </span>
                             <span className={s.dayNum}>
-                                {day.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                                {day.toLocaleDateString(locale(), { day: "numeric", month: "short" })}
                             </span>
                             <span className={s.dayTaken_label}>
                                 {isSame ? "already here" : taken ? taken.title : "free"}

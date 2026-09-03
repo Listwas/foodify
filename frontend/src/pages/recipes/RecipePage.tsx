@@ -7,6 +7,7 @@ import {
     setFeedback, setImage, setRecipeServings, useAppState,
 } from "../../store"
 import { BASE_SERVINGS } from "../../store/types"
+import { useT } from "../../lib/i18n"
 import { useToast } from "../../context/ToastContext"
 import { useRecipe, useRecipeMap } from "../../data/library"
 import Icon from "../../components/Icon"
@@ -24,6 +25,7 @@ function RecipePage() {
     const [confirmDelete, setConfirmDelete] = useState(false)
     const navigate = useNavigate()
     const { showToast } = useToast()
+    const t = useT()
     const state = useAppState()
     const recipes = useRecipeMap()
     const r = useRecipe(Number(id))
@@ -31,10 +33,10 @@ function RecipePage() {
     if (!r) {
         return (
             <div className="page">
-                <p>Recipe not found.</p>
+                <p>{t("Recipe not found.")}</p>
                 <Link to="/recipes" className="btn">
                     <Icon name="left" size={15} />
-                    Back to library
+                    {t("Library")}
                 </Link>
             </div>
         )
@@ -62,7 +64,7 @@ function RecipePage() {
             <div className={s.topBar}>
                 <Link to="/recipes" className={s.back}>
                     <Icon name="left" size={15} />
-                    Library
+                    {t("Library")}
                 </Link>
                 <div className={s.topActions}>
                     <button
@@ -70,56 +72,56 @@ function RecipePage() {
                         onClick={() => {
                             if (liked) {
                                 clearFeedback(r.id)
-                                showToast("Removed from your likes")
+                                showToast(t("Removed from your likes"))
                             } else {
                                 setFeedback(r.id, "like")
-                                showToast("Liked. It'll come up more often.")
+                                showToast(t("Liked. It'll come up more often."))
                             }
                         }}
                         aria-pressed={liked}
                         data-tip={liked
-                            ? "Remove your like"
-                            : "Tells the app to suggest this sort of thing more"}
+                            ? t("Remove your like")
+                            : t("Tells the app to suggest this sort of thing more")}
                         data-tip-below
                     >
                         <Icon name="heart" size={16} filled={liked} />
-                        {liked ? "Liked" : "Like"}
+                        {liked ? t("Liked") : t("Like")}
                     </button>
                     <button
                         className="btn"
                         onClick={() => setEditing(true)}
-                        data-tip="Change anything about this recipe"
+                        data-tip={t("Change anything about this recipe")}
                         data-tip-below
                     >
                         <Icon name="edit" size={16} />
-                        Edit
+                        {t("Edit")}
                     </button>
                     <button
                         className="btn"
                         onClick={() => {
                             if (hidden) {
                                 clearFeedback(r.id)
-                                showToast("Back in the library")
+                                showToast(t("Back in the library"))
                             } else {
                                 setFeedback(r.id, "hidden")
-                                showToast("Hidden. It won't be suggested again.")
+                                showToast(t("Hidden. It won't be suggested again."))
                             }
                         }}
                         data-tip={hidden
-                            ? "Put it back in the library"
-                            : "Keep it out of the library and the deck"}
+                            ? t("Put it back in the library")
+                            : t("Keep it out of the library and the deck")}
                         data-tip-below
                     >
                         <Icon name={hidden ? "undo" : "ban"} size={16} />
-                        {hidden ? "Unhide" : "Hide"}
+                        {hidden ? t("Unhide") : t("Hide")}
                     </button>
                     <button
                         className="btn primary"
                         onClick={() => setPlanning(true)}
-                        data-tip="Add to a day on your plan"
+                        data-tip={t("Add to a day on your plan")}
                     >
                         <Icon name="plus" size={16} />
-                        Plan this
+                        {t("Plan this")}
                     </button>
                 </div>
             </div>
@@ -139,14 +141,14 @@ function RecipePage() {
                             <Icon name={r.source === "ai" ? "sparkle" : "plate"} size={44} />
                         </div>
                     )}
-                    {r.image_is_stock && <span className={s.stockTag}>stock photo</span>}
+                    {r.image_is_stock && <span className={s.stockTag}>{t("stock photo")}</span>}
                     <button
                         className={s.photoToggle}
                         onClick={() => setEditingPhoto(v => !v)}
-                        data-tip="Change this photo"
+                        data-tip={t("Change this photo")}
                     >
                         <Icon name="image" size={15} />
-                        Photo
+                        {t("Photo")}
                     </button>
                 </div>
 
@@ -157,34 +159,34 @@ function RecipePage() {
                             {hidden && (
                                 <span className={`${s.mark} ${s.markHidden}`}>
                                     <Icon name="ban" size={12} />
-                                    hidden
+                                    {t("hidden")}
                                 </span>
                             )}
                             {r.edited && (
                                 <>
                                     <span className={s.mark}>
                                         <Icon name="edit" size={12} />
-                                        modified
+                                        {t("modified")}
                                     </span>
                                     <button
                                         className={`btn ghost ${s.restore}`}
                                         onClick={() => {
                                             restoreRecipe(r.id)
-                                            showToast("Original restored")
+                                            showToast(t("Original restored"))
                                         }}
-                                        data-tip="Undo every change and go back to the shipped recipe"
+                                        data-tip={t("Undo every change and go back to the shipped recipe")}
                                     >
                                         <Icon name="undo" size={14} />
-                                        Restore original
+                                        {t("Restore original")}
                                     </button>
                                 </>
                             )}
                             {r.copied_from != null && (
                                 <span className={s.mark}>
                                     <Icon name="plus" size={12} />
-                                    copy of{" "}
+                                    {t("copy of")}{" "}
                                     <Link to={`/recipe/${r.copied_from}`}>
-                                        {recipes.get(r.copied_from)?.title ?? "another recipe"}
+                                        {recipes.get(r.copied_from)?.title ?? t("another recipe")}
                                     </Link>
                                 </span>
                             )}
@@ -192,15 +194,15 @@ function RecipePage() {
                     )}
                     <div className={s.meta}>
                         {r.protein_type}
-                        {r.prep_time_minutes != null && <> · {r.prep_time_minutes} min</>}
-                        {r.source === "ai" && <> · generated</>}
+                        {r.prep_time_minutes != null && <> · {r.prep_time_minutes} {t("min")}</>}
+                        {r.source === "ai" && <> · {t("generated")}</>}
                     </div>
                     {r.calories != null && (
                         <div className={s.macroChips}>
-                            <span className={s.chip}><b>{r.calories}</b> kcal</span>
-                            <span className={s.chip}><b>{Math.round(r.protein_g ?? 0)}g</b> protein</span>
-                            <span className={s.chip}><b>{Math.round(r.carbs_g ?? 0)}g</b> carbs</span>
-                            <span className={s.chip}><b>{Math.round(r.sugar_g ?? 0)}g</b> sugar</span>
+                            <span className={s.chip}><b>{r.calories}</b> {t("kcal")}</span>
+                            <span className={s.chip}><b>{Math.round(r.protein_g ?? 0)}g</b> {t("protein")}</span>
+                            <span className={s.chip}><b>{Math.round(r.carbs_g ?? 0)}g</b> {t("carbs")}</span>
+                            <span className={s.chip}><b>{Math.round(r.sugar_g ?? 0)}g</b> {t("sugar")}</span>
                         </div>
                     )}
                     {(editingPhoto || r.image_is_stock) && (
@@ -213,7 +215,7 @@ function RecipePage() {
 
             <div className={s.columns}>
                 <section>
-                    <h2>Ingredients</h2>
+                    <h2>{t("Ingredients")}</h2>
                     <ServingsStepper
                         className={s.servings}
                         value={servings}
@@ -232,9 +234,9 @@ function RecipePage() {
                     </ul>
                 </section>
                 <section>
-                    <h2>Instructions</h2>
+                    <h2>{t("Instructions")}</h2>
                     <div className={s.instructions}>
-                        {metricProse(r.instructions) || "No instructions recorded."}
+                        {metricProse(r.instructions) || t("No instructions recorded.")}
                     </div>
                 </section>
             </div>
@@ -251,14 +253,14 @@ function RecipePage() {
                                 onClick={() => {
                                     const name = r.title
                                     deleteRecipe(r.id)
-                                    showToast(`Deleted: ${name}`)
+                                    showToast(t("Deleted: {title}", { title: name }))
                                     navigate("/recipes")
                                 }}
                             >
-                                Yes, delete it
+                                {t("Yes, delete it")}
                             </button>
                             <button className="btn ghost" onClick={() => setConfirmDelete(false)}>
-                                Keep it
+                                {t("Keep it")}
                             </button>
                         </>
                     ) : (
@@ -267,7 +269,7 @@ function RecipePage() {
                             onClick={() => setConfirmDelete(true)}
                         >
                             <Icon name="close" size={15} />
-                            Delete this recipe
+                            {t("Delete this recipe")}
                         </button>
                     )}
                 </div>

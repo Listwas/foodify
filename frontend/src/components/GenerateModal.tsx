@@ -3,6 +3,7 @@ import type { RecipeCandidate } from "../lib/types"
 import { generateRecipe } from "../lib/generate"
 import { searchPhotos } from "../lib/photos"
 import { imageBox, ingredientLabel, mealImage } from "../lib/format"
+import { useT } from "../lib/i18n"
 import { useToast } from "../context/ToastContext"
 import { addRecipe, assign } from "../store"
 import Icon from "./Icon"
@@ -23,6 +24,7 @@ const NO_PHOTO: PhotoChoice = {
 
 function GenerateModal({ date, onClose }: Props) {
     const { showToast } = useToast()
+    const t = useT()
 
     const [protein, setProtein] = useState("")
     const [time, setTime] = useState("")
@@ -63,12 +65,14 @@ function GenerateModal({ date, onClose }: Props) {
         if (!candidate) return
         const saved = addRecipe({ ...candidate, source: "ai", ...photo })
         if (date) assign(saved.id, date)
-        showToast(date ? `Planned: ${saved.title}` : `Saved: ${saved.title}`)
+        showToast(date
+            ? t("Planned: {title}", { title: saved.title })
+            : t("Saved: {title}", { title: saved.title }))
         onClose()
     }
 
     return (
-        <Modal title="Generate something new" onClose={onClose}>
+        <Modal title={t("Generate something new")} onClose={onClose}>
             {!candidate ? (
                 <form
                     className={s.form}
@@ -77,14 +81,14 @@ function GenerateModal({ date, onClose }: Props) {
                     <label className={s.label}>
                         Protein
                         <select className="field" value={protein} onChange={e => setProtein(e.target.value)}>
-                            <option value="">Anything</option>
+                            <option value="">{t("Anything")}</option>
                             {PROTEINS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                     </label>
                     <label className={s.label}>
                         Time available
                         <select className="field" value={time} onChange={e => setTime(e.target.value)}>
-                            <option value="">Doesn't matter</option>
+                            <option value="">{t("Doesn't matter")}</option>
                             {TIMES.map(t => <option key={t} value={t}>under {t} min</option>)}
                         </select>
                     </label>
@@ -100,7 +104,7 @@ function GenerateModal({ date, onClose }: Props) {
                     </label>
                     <button className="btn primary" type="submit" disabled={busy}>
                         <Icon name="sparkle" size={16} />
-                        {busy ? "Cooking up an idea…" : "Generate"}
+                        {busy ? t("Cooking up an idea…") : "Generate"}
                     </button>
                 </form>
             ) : (
@@ -118,27 +122,27 @@ function GenerateModal({ date, onClose }: Props) {
                     <h3>{candidate.title}</h3>
                     <div className={s.meta}>
                         {candidate.protein_type}
-                        {candidate.prep_time_minutes != null && <> · {candidate.prep_time_minutes} min</>}
+                        {candidate.prep_time_minutes != null && <> · {candidate.prep_time_minutes} {t("min")}</>}
                     </div>
                     {candidate.calories != null && (
                         <div className="macros">
                             {candidate.calories} kcal · P {candidate.protein_g}g · C {candidate.carbs_g}g · S {candidate.sugar_g}g
                         </div>
                     )}
-                    <h4>Ingredients</h4>
+                    <h4>{t("Ingredients")}</h4>
                     <ul className={s.ingredients}>
                         {candidate.ingredients.map((ing, i) => <li key={i}>{ingredientLabel(ing)}</li>)}
                     </ul>
-                    <h4>Instructions</h4>
+                    <h4>{t("Instructions")}</h4>
                     <div className={s.instructions}>{candidate.instructions}</div>
                     <div className={s.actions}>
                         <button className="btn primary" onClick={save} disabled={busy}>
-                            {date ? "Save & plan it" : "Save to library"}
+                            {date ? t("Save & plan it") : t("Save to library")}
                         </button>
                         <button className="btn" onClick={() => void generate()} disabled={busy}>
-                            {busy ? "Thinking…" : "Try another"}
+                            {busy ? t("Thinking…") : t("Try another")}
                         </button>
-                        <button className="btn ghost" onClick={() => setCandidate(null)}>Discard</button>
+                        <button className="btn ghost" onClick={() => setCandidate(null)}>{t("Discard")}</button>
                     </div>
                 </div>
             )}

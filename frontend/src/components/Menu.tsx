@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useT } from "../lib/i18n"
 import Icon, { type IconName } from "./Icon"
 import s from "./Menu.module.css"
 
@@ -21,6 +22,7 @@ export function Menu({ items, label = "More actions", children }: {
     label?: string
     children?: ReactNode
 }) {
+    const t = useT()
     const [open, setOpen] = useState(false)
     const wrap = useRef<HTMLDivElement>(null)
 
@@ -43,7 +45,7 @@ export function Menu({ items, label = "More actions", children }: {
             <button
                 className={`btn ghost icon ${s.trigger} ${open ? s.triggerOpen : ""}`}
                 onClick={() => setOpen(o => !o)}
-                aria-label={label}
+                aria-label={t(label)}
                 aria-expanded={open}
                 data-tip={open ? undefined : label}
             >
@@ -59,7 +61,7 @@ export function Menu({ items, label = "More actions", children }: {
                             onClick={() => { setOpen(false); item.onSelect() }}
                         >
                             {item.icon && <Icon name={item.icon} size={16} />}
-                            {item.label}
+                            {t(item.label)}
                         </button>
                     ))}
                 </div>

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react"
 import type { Stance } from "../../lib/types"
+import { LANGUAGES, useT, useLang, setLang, type Lang } from "../../lib/i18n"
 import { useToast } from "../../context/ToastContext"
 import {
     addPref, exportState, importState, removePref, resetState, useAppState,
@@ -10,6 +11,7 @@ import Icon from "../../components/Icon"
 import s from "./Profile.module.css"
 
 function IngredientInput({ stance, names }: { stance: Stance; names: string[] }) {
+    const t = useT()
     const [value, setValue] = useState("")
     const [hardFilter, setHardFilter] = useState(false)
 
@@ -37,29 +39,31 @@ function IngredientInput({ stance, names }: { stance: Stance; names: string[] })
                 value={value}
                 list={listId}
                 onChange={e => setValue(e.target.value)}
-                placeholder={stance === "like" ? "e.g. garlic, feta…" : "e.g. olives, cilantro…"}
-                aria-label={stance === "like" ? "ingredient you like" : "ingredient to avoid"}
+                placeholder={stance === "like" ? t("e.g. garlic, feta…") : t("e.g. olives, cilantro…")}
+                aria-label={stance === "like" ? t("ingredient you like") : t("ingredient to avoid")}
             />
             <datalist id={listId}>
                 {suggestions.map(n => <option key={n} value={n} />)}
             </datalist>
             {stance === "avoid" && (
-                <label className={s.hardToggle} title="never show recipes containing this">
+                <label className={s.hardToggle} title={t("never show recipes containing this")}>
                     <input
                         type="checkbox"
                         checked={hardFilter}
                         onChange={e => setHardFilter(e.target.checked)}
                     />
-                    allergy
+                    {t("allergy")}
                 </label>
             )}
-            <button className="btn" type="submit" disabled={!value.trim()}>Add</button>
+            <button className="btn" type="submit" disabled={!value.trim()}>{t("Add")}</button>
         </form>
     )
 }
 
 function Settings() {
     const { showToast } = useToast()
+    const t = useT()
+    const lang = useLang()
     const fileInput = useRef<HTMLInputElement>(null)
     const [confirmWipe, setConfirmWipe] = useState(false)
     const [theme, setTheme] = useState(
@@ -87,9 +91,9 @@ function Settings() {
         if (!file) return
         try {
             importState(await file.text())
-            showToast("Backup restored")
+            showToast(t("Backup restored"))
         } catch {
-            showToast("That file isn't a Foodify backup", "error")
+            showToast(t("That file isn't a Foodify backup"), "error")
         } finally {
             if (fileInput.current) fileInput.current.value = ""
         }
@@ -97,34 +101,54 @@ function Settings() {
 
     return (
         <section className={s.settings}>
-            <h2>Settings</h2>
+            <h2>{t("Settings")}</h2>
             <div className={s.settingRow}>
                 <div>
-                    <div className={s.settingName}>Appearance</div>
-                    <div className={s.settingNote}>Currently {theme}.</div>
+                    <div className={s.settingName}>{t("Appearance")}</div>
+                    <div className={s.settingNote}>{t("Currently {theme}.", { theme: t(theme) })}</div>
                 </div>
                 <button className="btn" onClick={toggleTheme}>
                     <Icon name="theme" size={16} />
-                    Switch to {theme === "light" ? "dark" : "light"}
+                    {t("Switch to {theme}", { theme: t(theme === "light" ? "dark" : "light") })}
                 </button>
             </div>
 
             <div className={s.settingRow}>
                 <div>
-                    <div className={s.settingName}>Your data</div>
+                    <div className={s.settingName}>{t("Language")}</div>
                     <div className={s.settingNote}>
-                        Everything lives in this browser. Nothing is uploaded anywhere. A backup
-                        file is also the only way to move your plan to another device.
+                        {t("The app's own words. Recipes stay in English.")}
+                    </div>
+                </div>
+                <div className={s.settingActions}>
+                    {(Object.keys(LANGUAGES) as Lang[]).map(code => (
+                        <button
+                            key={code}
+                            className={`btn ${lang === code ? "primary" : ""}`}
+                            onClick={() => setLang(code)}
+                            aria-pressed={lang === code}
+                        >
+                            {LANGUAGES[code]}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className={s.settingRow}>
+                <div>
+                    <div className={s.settingName}>{t("Your data")}</div>
+                    <div className={s.settingNote}>
+                        {t("Everything lives in this browser. Nothing is uploaded anywhere. A backup file is also the only way to move your plan to another device.")}
                     </div>
                 </div>
                 <div className={s.settingActions}>
                     <button className="btn" onClick={download}>
                         <Icon name="download" size={16} />
-                        Export
+                        {t("Export")}
                     </button>
                     <button className="btn" onClick={() => fileInput.current?.click()}>
                         <Icon name="upload" size={16} />
-                        Import
+                        {t("Import")}
                     </button>
                     <input
                         ref={fileInput}
@@ -141,10 +165,9 @@ function Settings() {
                 a plan that took months to build. */}
             <div className={`${s.settingRow} ${s.danger}`}>
                 <div>
-                    <div className={s.settingName}>Wipe all data</div>
+                    <div className={s.settingName}>{t("Wipe all data")}</div>
                     <div className={s.settingNote}>
-                        Clears your plan, every swipe, your ingredient preferences, groceries
-                        and any recipe you wrote. There is no undo and no copy on a server.
+                        {t("Clears your plan, every swipe, your ingredient preferences, groceries and any recipe you wrote. There is no undo and no copy on a server.")}
                     </div>
                 </div>
                 <div className={s.settingActions}>
@@ -152,7 +175,7 @@ function Settings() {
                         <>
                             <button className="btn" onClick={download}>
                                 <Icon name="download" size={16} />
-                                Back up first
+                                {t("Back up first")}
                             </button>
                             <button
                                 className="btn danger"
@@ -160,13 +183,13 @@ function Settings() {
                                     resetState()
                                     localStorage.removeItem("planner-mode")
                                     setConfirmWipe(false)
-                                    showToast("Everything wiped. Starting fresh.")
+                                    showToast(t("Everything wiped. Starting fresh."))
                                 }}
                             >
-                                Yes, wipe everything
+                                {t("Yes, wipe everything")}
                             </button>
                             <button className="btn ghost" onClick={() => setConfirmWipe(false)}>
-                                Cancel
+                                {t("Cancel")}
                             </button>
                         </>
                     ) : (
@@ -175,14 +198,14 @@ function Settings() {
                             onClick={() => setConfirmWipe(true)}
                         >
                             <Icon name="ban" size={16} />
-                            Wipe all data
+                            {t("Wipe all data")}
                         </button>
                     )}
                 </div>
             </div>
 
             <p className={s.credit}>
-                Recipe data from{" "}
+                {t("Recipe data from")}{" "}
                 <a href="https://www.themealdb.com" target="_blank" rel="noopener noreferrer">
                     TheMealDB
                 </a>.
@@ -192,6 +215,7 @@ function Settings() {
 }
 
 function Profile() {
+    const t = useT()
     const state = useAppState()
     const index = useIndex()
     const signals = useSignals()
@@ -209,22 +233,21 @@ function Profile() {
 
     return (
         <div className="page">
-            <h1>Your taste</h1>
+            <h1>{t("Your taste")}</h1>
             <p className={s.blurb}>
-                Tell the app what you like and it'll weight suggestions accordingly, everywhere
-                in the app and not just here.
+                {t("Tell the app what you like and it'll weight suggestions accordingly, everywhere in the app and not just here.")}
             </p>
 
             <div className={s.columns}>
                 <section className={s.panel}>
-                    <h2><Icon name="heart" size={16} filled /> Ingredients you like</h2>
+                    <h2><Icon name="heart" size={16} filled /> {t("Ingredients you like")}</h2>
                     <IngredientInput stance="like" names={names} />
                     <div className={s.tags}>
-                        {likes.length === 0 && <span className={s.none}>Nothing yet.</span>}
+                        {likes.length === 0 && <span className={s.none}>{t("Nothing yet.")}</span>}
                         {likes.map(i => (
                             <span key={i.id} className={`${s.tag} ${s.tagLike}`}>
                                 {i.name}
-                                <button onClick={() => removePref(i.id)} aria-label={`remove ${i.name}`}>
+                                <button onClick={() => removePref(i.id)} aria-label={t("remove {name}", { name: i.name })}>
                                     <Icon name="close" size={12} />
                                 </button>
                             </span>
@@ -233,15 +256,15 @@ function Profile() {
                 </section>
 
                 <section className={s.panel}>
-                    <h2><Icon name="close" size={16} /> Ingredients to avoid</h2>
+                    <h2><Icon name="close" size={16} /> {t("Ingredients to avoid")}</h2>
                     <IngredientInput stance="avoid" names={names} />
                     <div className={s.tags}>
-                        {avoids.length === 0 && <span className={s.none}>Nothing yet.</span>}
+                        {avoids.length === 0 && <span className={s.none}>{t("Nothing yet.")}</span>}
                         {avoids.map(i => (
                             <span key={i.id} className={`${s.tag} ${s.tagAvoid}`}>
                                 {i.name}
-                                {i.hardFilter && <em title="never shown">allergy</em>}
-                                <button onClick={() => removePref(i.id)} aria-label={`remove ${i.name}`}>
+                                {i.hardFilter && <em title={t("never show recipes containing this")}>{t("allergy")}</em>}
+                                <button onClick={() => removePref(i.id)} aria-label={t("remove {name}", { name: i.name })}>
                                     <Icon name="close" size={12} />
                                 </button>
                             </span>
@@ -251,36 +274,36 @@ function Profile() {
             </div>
 
             <section className={s.learned}>
-                <h2>What the app has learned</h2>
+                <h2>{t("What the app has learned")}</h2>
                 {!taste.has_signal ? (
                     <p className={s.none}>
-                        Nothing yet. Swipe a few recipes in Discover and this fills in.
+                        {t("Nothing yet. Swipe a few recipes in Discover and this fills in.")}
                     </p>
                 ) : (
                     <>
                         <div className={s.stats}>
-                            <span><b>{taste.counts.liked}</b> liked</span>
-                            <span><b>{taste.counts.passed}</b> passed</span>
-                            <span><b>{taste.counts.hidden}</b> hidden</span>
-                            <span><b>{taste.counts.planned}</b> planned</span>
-                            <span><b>{taste.counts.cooked}</b> cooked</span>
+                            <span><b>{taste.counts.liked}</b> {t("liked")}</span>
+                            <span><b>{taste.counts.passed}</b> {t("passed")}</span>
+                            <span><b>{taste.counts.hidden}</b> {t("hidden")}</span>
+                            <span><b>{taste.counts.planned}</b> {t("planned")}</span>
+                            <span><b>{taste.counts.cooked}</b> {t("cooked")}</span>
                         </div>
                         {taste.likes.length > 0 && (
-                            <LearnedRow label="drawn to">
+                            <LearnedRow label={t("drawn to")}>
                                 {taste.likes.map(l => (
                                     <span key={l.name} className={`${s.tag} ${s.tagLike}`}>{l.name}</span>
                                 ))}
                             </LearnedRow>
                         )}
                         {taste.dislikes.length > 0 && (
-                            <LearnedRow label="steering clear of">
+                            <LearnedRow label={t("steering clear of")}>
                                 {taste.dislikes.map(l => (
                                     <span key={l.name} className={`${s.tag} ${s.tagAvoid}`}>{l.name}</span>
                                 ))}
                             </LearnedRow>
                         )}
                         {Object.keys(taste.protein_share).length > 0 && (
-                            <LearnedRow label="recently">
+                            <LearnedRow label={t("recently")}>
                                 {Object.entries(taste.protein_share).map(([p, share]) => (
                                     <span key={p} className={s.tag}>
                                         {p} {Math.round(share * 100)}%

@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom"
+import { useT } from "../lib/i18n"
 import Icon, { type IconName } from "./Icon"
 import s from "./Nav.module.css"
 
@@ -17,6 +18,7 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
  * corner of the screen.
  */
 function Nav() {
+    const t = useT()
     return (
         <nav className={s.nav}>
             <span className={s.logo}>foodify</span>
@@ -29,7 +31,7 @@ function Nav() {
                         className={({ isActive }) => `${s.tab} ${isActive ? s.active : ""}`}
                     >
                         <Icon name={tab.icon} size={20} />
-                        <span className={s.label}>{tab.label}</span>
+                        <span className={s.label}>{t(tab.label)}</span>
                     </NavLink>
                 ))}
             </div>

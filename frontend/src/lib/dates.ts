@@ -1,3 +1,5 @@
+import { locale } from "./i18n"
+
 const pad = (n: number) => String(n).padStart(2, "0")
 
 /** local yyyy-mm-dd (toISOString would shift across midnight in non-UTC zones) */
@@ -31,15 +33,15 @@ export function addDays(d: Date, n: number): Date {
   return copy
 }
 
-export const weekdayShort = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short" })
+export const weekdayShort = (d: Date) => d.toLocaleDateString(locale(), { weekday: "short" })
 
 export const dayLong = (d: Date) =>
-  d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })
+  d.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "short" })
 
 export const rangeLabel = (start: Date) => {
   const end = addDays(start, 6)
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
-  return `${start.toLocaleDateString("en-GB", opts)} – ${end.toLocaleDateString("en-GB", opts)}`
+  return `${start.toLocaleDateString(locale(), opts)} – ${end.toLocaleDateString(locale(), opts)}`
 }
 
 export function addMonths(d: Date, n: number): Date {
@@ -57,6 +59,10 @@ export function monthGrid(monthStart: Date): Date[] {
 }
 
 export const monthLabel = (d: Date) =>
-  d.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+  d.toLocaleDateString(locale(), { month: "long", year: "numeric" })
 
-export const WEEKDAY_HEADS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+/** Column headings for the month grid, in whichever language is on. */
+export const weekdayHeads = () => {
+  const monday = startOfWeek(new Date())
+  return [...Array(7)].map((_, i) => weekdayShort(addDays(monday, i)))
+}

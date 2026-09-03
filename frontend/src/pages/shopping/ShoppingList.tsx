@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { addDays, iso, rangeLabel, startOfWeek, weekdayShort } from "../../lib/dates"
 import { splitEntry } from "../../lib/quantity"
 import { buildShoppingWeek, shoppingText, type ShoppingLine } from "../../lib/shopping"
+import { useT } from "../../lib/i18n"
 import {
     addExtra, clearShoppingTicks, dropLine, editExtra, removeExtra, restoreAllLines,
     restoreLine, setChecks, setExtraChecked, useAppState,
@@ -53,6 +54,7 @@ function ShoppingList() {
     const { start } = useParams()
     const navigate = useNavigate()
     const { showToast } = useToast()
+    const t = useT()
     const state = useAppState()
     const recipes = useRecipeMap()
     const [open, setOpen] = useState<string | null>(null)
@@ -96,7 +98,7 @@ function ShoppingList() {
 
     const copy = async () => {
         const copied = await copyText(shoppingText(week))
-        showToast(copied ? "List copied" : "Couldn't copy the list", copied ? "success" : "error")
+        showToast(copied ? t("List copied") : t("Couldn't copy the list"), copied ? "success" : "error")
     }
 
     const thisWeek = from === iso(startOfWeek(new Date()))
@@ -105,21 +107,21 @@ function ShoppingList() {
     return (
         <div className="page">
             <div className="page-head">
-                <h1>Shopping list</h1>
+                <h1>{t("Shopping list")}</h1>
                 <div className={s.weekNav}>
                     <button className="btn ghost icon" onClick={() => go(-1)}
-                        aria-label="previous week" data-tip="Previous week">
+                        aria-label={t("Previous week")} data-tip={t("Previous week")}>
                         <Icon name="left" />
                     </button>
                     <button
                         className={`btn ghost ${s.rangeBtn}`}
                         onClick={() => navigate(`/shopping/${iso(startOfWeek(new Date()))}`)}
-                        data-tip="Jump to this week"
+                        data-tip={t("Jump to this week")}
                     >
-                        {thisWeek ? "This week" : rangeLabel(new Date(`${from}T00:00`))}
+                        {thisWeek ? t("This week") : rangeLabel(new Date(`${from}T00:00`))}
                     </button>
                     <button className="btn ghost icon" onClick={() => go(1)}
-                        aria-label="next week" data-tip="Next week">
+                        aria-label={t("Next week")} data-tip={t("Next week")}>
                         <Icon name="right" />
                     </button>
                 </div>
@@ -138,7 +140,7 @@ function ShoppingList() {
                             </span>
                             <span className={s.mealTitle}>{meal.recipe.title}</span>
                             <span className={s.mealServes}>
-                                {meal.cooked ? "cooked" : `for ${meal.servings}`}
+                                {meal.cooked ? t("cooked") : t("for {n}", { n: meal.servings })}
                             </span>
                         </Link>
                     ))}
@@ -148,21 +150,20 @@ function ShoppingList() {
             {nothingHere ? (
                 <div className={s.empty}>
                     <Icon name="list" size={30} />
-                    <p>Nothing planned for this week, and nothing added yet.</p>
+                    <p>{t("Nothing planned for this week, and nothing added yet.")}</p>
                     <Link to="/" className="btn primary">
                         <Icon name="calendar" size={16} />
-                        Go to the plan
+                        {t("Go to the plan")}
                     </Link>
                 </div>
             ) : (
                 <div className={s.bar}>
                     <div className={s.progress}>
-                        <strong>{week.ticked}</strong> of {week.total} in the basket
+                        {t("{ticked} of {total} in the basket", { ticked: week.ticked, total: week.total })}
                         {week.cooked > 0 && (
                             <span className={s.note}>
                                 {" "}
-                                &middot; {week.cooked} cooked{" "}
-                                {week.cooked === 1 ? "meal" : "meals"} left out
+                                &middot; {t("{n} cooked meals left out", { n: week.cooked })}
                             </span>
                         )}
                     </div>
@@ -175,19 +176,19 @@ function ShoppingList() {
                                         from,
                                         week.sections.flatMap(x => x.lines).flatMap(l => l.keys),
                                     )
-                                    showToast("Everything unticked")
+                                    showToast(t("Everything unticked"))
                                 }}
-                                data-tip="Start the list again"
+                                data-tip={t("Start the list again")}
                                 data-tip-below
                             >
                                 <Icon name="undo" size={15} />
-                                Reset
+                                {t("Reset")}
                             </button>
                         )}
                         <button className="btn" onClick={copy}
-                            data-tip="Copy the list as text" data-tip-below>
+                            data-tip={t("Copy the list as text")} data-tip-below>
                             <Icon name="download" size={15} />
-                            Copy
+                            {t("Copy")}
                         </button>
                     </div>
                 </div>
@@ -201,11 +202,11 @@ function ShoppingList() {
                     className={`field ${s.addInput}`}
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
-                    placeholder="Add something: milk, 2 kg potatoes, bin bags"
-                    aria-label="add an item to this week's list"
+                    placeholder={t("Add something: milk, 2 kg potatoes, bin bags")}
+                    aria-label={t("add an item to this week's list")}
                 />
                 <button className="btn primary" type="submit" disabled={!draft.trim()}>
-                    Add
+                    {t("Add")}
                 </button>
             </form>
 
@@ -213,7 +214,7 @@ function ShoppingList() {
                 {week.sections.map(({ section, lines }) => (
                     <section key={section} className={s.section}>
                         <h2 className={s.sectionHead}>
-                            {section}
+                            {t(section)}
                             <span className={s.sectionCount}>{lines.length}</span>
                         </h2>
                         <ul className={s.list}>
@@ -225,16 +226,16 @@ function ShoppingList() {
                                                 className={`field ${s.editInput}`}
                                                 value={editDraft}
                                                 onChange={e => setEditDraft(e.target.value)}
-                                                aria-label={`edit ${line.name}`}
+                                                aria-label={t("Edit")}
                                                 autoFocus
                                                 onKeyDown={e => e.key === "Escape" && setEditing(null)}
                                             />
                                             <button className="btn primary" type="submit"
-                                                aria-label="save">
+                                                aria-label={t("Save changes")}>
                                                 <Icon name="check" size={15} />
                                             </button>
                                             <button className="btn ghost" type="button"
-                                                onClick={() => setEditing(null)} aria-label="cancel">
+                                                onClick={() => setEditing(null)} aria-label={t("Cancel")}>
                                                 <Icon name="close" size={15} />
                                             </button>
                                         </form>
@@ -263,8 +264,8 @@ function ShoppingList() {
                                                         <button
                                                             className={s.rowBtn}
                                                             onClick={() => startEditing(line)}
-                                                            aria-label={`edit ${line.name}`}
-                                                            data-tip="Edit"
+                                                            aria-label={t("Edit")}
+                                                            data-tip={t("Edit")}
                                                             data-tip-below
                                                         >
                                                             <Icon name="edit" size={14} />
@@ -272,8 +273,8 @@ function ShoppingList() {
                                                         <button
                                                             className={s.rowBtn}
                                                             onClick={() => removeExtra(line.extraId!)}
-                                                            aria-label={`delete ${line.name}`}
-                                                            data-tip="Delete"
+                                                            aria-label={t("Delete")}
+                                                            data-tip={t("Delete")}
                                                             data-tip-below
                                                         >
                                                             <Icon name="close" size={14} />
@@ -283,8 +284,8 @@ function ShoppingList() {
                                                     <button
                                                         className={s.rowBtn}
                                                         onClick={() => dropLine(from, line.key)}
-                                                        aria-label={`take ${line.name} off this list`}
-                                                        data-tip="Already got it"
+                                                        aria-label={t("Already got it")}
+                                                        data-tip={t("Already got it")}
                                                         data-tip-below
                                                     >
                                                         <Icon name="close" size={14} />
@@ -302,7 +303,7 @@ function ShoppingList() {
                                             onClick={() => setOpen(open === line.key ? null : line.key)}
                                             aria-expanded={open === line.key}
                                         >
-                                            {open === line.key ? "hide" : `${line.sources.length} meals`}
+                                            {open === line.key ? t("hide") : t("{n} meals", { n: line.sources.length })}
                                         </button>
                                     )}
                                     {open === line.key && (
@@ -310,7 +311,7 @@ function ShoppingList() {
                                             {line.sources.map((source, i) => (
                                                 <li key={`${source.date}-${i}`}>
                                                     <span className={s.sourceQty}>
-                                                        {source.quantity || "some"}
+                                                        {source.quantity || t("some")}
                                                     </span>
                                                     <Link to={`/day/${source.date}`}>
                                                         {source.title}
@@ -329,10 +330,10 @@ function ShoppingList() {
             {week.dropped.length > 0 && (
                 <div className={s.droppedBox}>
                     <div className={s.droppedHead}>
-                        <span>Off this week's list</span>
+                        <span>{t("Off this week's list")}</span>
                         <button className="btn ghost" onClick={() => restoreAllLines(from)}>
                             <Icon name="undo" size={14} />
-                            Put them all back
+                            {t("Put them all back")}
                         </button>
                     </div>
                     <div className={s.droppedChips}>
@@ -341,7 +342,7 @@ function ShoppingList() {
                                 key={line.key}
                                 className={s.droppedChip}
                                 onClick={() => restoreLine(from, line.key)}
-                                data-tip="Put it back on the list"
+                                data-tip={t("Put it back on the list")}
                             >
                                 <Icon name="plus" size={12} />
                                 {line.name}

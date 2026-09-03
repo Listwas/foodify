@@ -2,6 +2,7 @@ import { useRef, useState } from "react"
 import { searchPhotos } from "../lib/photos"
 import type { StockPhoto } from "../lib/types"
 import { fileToSquareDataUrl, ImageError } from "../lib/image"
+import { useT } from "../lib/i18n"
 import { useToast } from "../context/ToastContext"
 import Icon from "./Icon"
 import s from "./PhotoPicker.module.css"
@@ -30,6 +31,7 @@ interface Props {
  */
 function PhotoPicker({ query, value, onChange, compact }: Props) {
     const { showToast } = useToast()
+    const t = useT()
     const fileInput = useRef<HTMLInputElement>(null)
     const [results, setResults] = useState<StockPhoto[]>([])
     const [cursor, setCursor] = useState(0)
@@ -57,7 +59,7 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
             const found = await searchPhotos(query, nextPage)
             if (found.length === 0) {
                 showToast(
-                    results.length ? "No more photos for this dish" : "No photos found for this dish",
+                    results.length ? t("No more photos for this dish") : t("No photos found for this dish"),
                     "error"
                 )
                 return
@@ -80,9 +82,9 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
             const dataUrl = await fileToSquareDataUrl(file)
             // your own photo is of the real dish, so it isn't stock any more
             onChange({ image_url: dataUrl, image_is_stock: false, image_attribution: null })
-            showToast("Photo updated")
+            showToast(t("Photo updated"))
         } catch (e) {
-            showToast(e instanceof ImageError ? e.message : "Couldn't use that image", "error")
+            showToast(e instanceof ImageError ? e.message : t("Couldn't use that image"), "error")
         } finally {
             setBusy(false)
             if (fileInput.current) fileInput.current.value = ""
@@ -93,7 +95,7 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
         <div className={`${s.wrap} ${compact ? s.compact : ""}`}>
             {value.image_is_stock && value.image_url && (
                 <div className={s.notice}>
-                    <span className={s.badge}>stock photo</span>
+                    <span className={s.badge}>{t("stock photo")}</span>
                     <span className={s.noticeText}>
                         A photo of a similar dish, not this exact recipe.
                     </span>
@@ -109,17 +111,17 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
                     className="btn"
                     onClick={reroll}
                     disabled={busy || !query}
-                    data-tip="Try a different photo"
+                    data-tip={t("Try a different photo")}
                 >
                     <Icon name={value.image_url ? "swap" : "search"} size={15} />
-                    {busy ? "…" : value.image_url ? "Reroll photo" : "Find a photo"}
+                    {busy ? "…" : value.image_url ? t("Reroll photo") : t("Find a photo")}
                 </button>
                 <button
                     type="button"
                     className="btn"
                     onClick={() => fileInput.current?.click()}
                     disabled={busy}
-                    data-tip="Use a photo from your device"
+                    data-tip={t("Use a photo from your device")}
                 >
                     <Icon name="upload" size={15} />
                     Upload your own
@@ -132,7 +134,7 @@ function PhotoPicker({ query, value, onChange, compact }: Props) {
                             onChange({ image_url: null, image_is_stock: false, image_attribution: null })
                         }
                         aria-label="remove the photo"
-                        data-tip="Remove the photo"
+                        data-tip={t("Remove the photo")}
                     >
                         <Icon name="close" size={16} />
                     </button>

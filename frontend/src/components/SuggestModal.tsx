@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import type { RecipeFull } from "../lib/types"
 import { imageBox, macroLine, mealImage } from "../lib/format"
+import { useT } from "../lib/i18n"
 import { useToast } from "../context/ToastContext"
 import { assign, useAppState } from "../store"
 import { useProteinTypes, useRecipeMap } from "../data/library"
@@ -25,6 +26,7 @@ type Candidate = RecipeFull & { reasons: string[] }
 
 function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
     const { showToast } = useToast()
+    const t = useT()
     const state = useAppState()
     const recipes = useRecipeMap()
     const proteins = useProteinTypes()
@@ -66,7 +68,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
 
     const pick = () => {
         if (pool.length === 0) {
-            showToast("No recipes match those filters", "error")
+            showToast(t("No recipes match those filters"), "error")
             return
         }
         let fresh = pool.filter(r => !seen.has(r.id) && r.id !== candidate?.id)
@@ -92,14 +94,14 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
     const plan = (recipeId: number) => {
         const recipe = recipes.get(recipeId)
         assign(recipeId, date)
-        showToast(`Planned: ${recipe?.title ?? "meal"}`)
+        showToast(t("Planned: {title}", { title: recipe?.title ?? "" }))
         onClose()
     }
 
     const img = candidate ? mealImage(candidate.image_url, "hero") : null
 
     return (
-        <Modal title="What's for dinner?" onClose={onClose}>
+        <Modal title={t("What's for dinner?")} onClose={onClose}>
             <div className={s.filters}>
                 <select
                     className="field"
@@ -107,7 +109,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     onChange={e => resetFilters(() => setProtein(e.target.value))}
                     aria-label="protein filter"
                 >
-                    <option value="">Any protein</option>
+                    <option value="">{t("Any protein")}</option>
                     {proteins.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
                 <select
@@ -116,7 +118,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                     onChange={e => resetFilters(() => setMaxTime(e.target.value))}
                     aria-label="time filter"
                 >
-                    <option value="">Any time</option>
+                    <option value="">{t("Any time")}</option>
                     {TIME_OPTIONS.map(t => <option key={t} value={t}>≤ {t} min</option>)}
                 </select>
             </div>
@@ -136,7 +138,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                         <h3>{candidate.title}</h3>
                         <div className={s.meta}>
                             {candidate.protein_type}
-                            {candidate.prep_time_minutes != null && <> · {candidate.prep_time_minutes} min</>}
+                            {candidate.prep_time_minutes != null && <> · {candidate.prep_time_minutes} {t("min")}</>}
                         </div>
                         {macroLine(candidate) && <div className="macros">{macroLine(candidate)}</div>}
                         {candidate.reasons.length > 0 && (
@@ -151,7 +153,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                         <button className="btn primary" onClick={() => plan(candidate.id)}>
                             Sounds good
                         </button>
-                        <button className="btn" onClick={pick}>Skip</button>
+                        <button className="btn" onClick={pick}>{t("Skip")}</button>
                     </div>
                 </div>
             ) : (
@@ -180,7 +182,7 @@ function SuggestModal({ date, currentRecipeId, onGenerate, onClose }: Props) {
                         </div>
                     )}
                     <div className={s.start}>
-                        <button className="btn primary" onClick={pick}>Surprise me</button>
+                        <button className="btn primary" onClick={pick}>{t("Surprise me")}</button>
                         <div className={s.poolNote}>
                             {pool.length} recipe{pool.length === 1 ? "" : "s"} ranked for your taste
                         </div>

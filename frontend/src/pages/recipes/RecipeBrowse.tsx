@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import type { RecipeFull } from "../../lib/types"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
+import { useT } from "../../lib/i18n"
 import { useToast } from "../../context/ToastContext"
 import { setFeedback, clearFeedback, useAppState } from "../../store"
 import { useLibrary, useProteinTypes } from "../../data/library"
@@ -46,6 +47,7 @@ function RecipeBrowse() {
     // recipes mid-countdown: id -> when the undo window closes
     const [pending, setPending] = useState<Record<number, number>>({})
     const { showToast } = useToast()
+    const t = useT()
 
     const library = useLibrary()
     const proteins = useProteinTypes()
@@ -166,7 +168,7 @@ function RecipeBrowse() {
             return next
         })
         clearFeedback(id)
-        showToast("Back in the library")
+        showToast(t("Back in the library"))
     }
 
     const clearFilters = () => { setProtein(""); setNutrition(""); setStatus("") }
@@ -174,15 +176,15 @@ function RecipeBrowse() {
     return (
         <div className="page">
             <div className="page-head">
-                <h1>{showHidden ? "Hidden recipes" : "Recipe library"}</h1>
+                <h1>{showHidden ? t("Hidden recipes") : t("Recipe library")}</h1>
                 <div className={s.headActions}>
                     <button className="btn primary" onClick={() => setShowForm(true)}>
                         <Icon name="plus" size={16} />
-                        Add your own
+                        {t("Add your own")}
                     </button>
                     <button className="btn" onClick={() => setShowGenerate(true)}>
                         <Icon name="sparkle" size={16} />
-                        Generate
+                        {t("Generate")}
                     </button>
                 </div>
             </div>
@@ -194,8 +196,8 @@ function RecipeBrowse() {
                         className={`field ${s.search}`}
                         value={q}
                         onChange={e => setQ(e.target.value)}
-                        placeholder="Search recipes…"
-                        aria-label="search recipes"
+                        placeholder={t("Search recipes…")}
+                        aria-label={t("Search recipes…")}
                     />
                     {q && (
                         <button className={s.searchClear} onClick={() => setQ("")} aria-label="clear search">
@@ -209,33 +211,33 @@ function RecipeBrowse() {
                     aria-expanded={showFilters}
                 >
                     <Icon name="filter" size={15} />
-                    Filters
+                    {t("Filters")}
                     {activeCount > 0 && <span className={s.badge}>{activeCount}</span>}
                 </button>
             </div>
 
             {showFilters && (
                 <div className={s.filters}>
-                    <Group label="Protein" options={proteins.map(p => ({ key: p, label: p }))}
+                    <Group label={t("Protein")} options={proteins.map(p => ({ key: p, label: p }))}
                         value={protein} onChange={setProtein} />
-                    <Group label="Nutrition" options={NUTRITION}
+                    <Group label={t("Nutrition")} options={NUTRITION}
                         value={nutrition} onChange={setNutrition} />
-                    <Group label="Status" options={STATUS}
+                    <Group label={t("Status")} options={STATUS}
                         value={status} onChange={setStatus} />
                     {activeCount > 0 && (
-                        <button className="btn ghost" onClick={clearFilters}>Clear all</button>
+                        <button className="btn ghost" onClick={clearFilters}>{t("Clear all")}</button>
                     )}
                 </div>
             )}
 
             <p className={s.count}>
-                {results.length} {results.length === 1 ? "recipe" : "recipes"}
-                {!showHidden && !q && !activeCount && hasSignal && " · best matches first"}
+                {t("{n} recipes", { n: results.length })}
+                {!showHidden && !q && !activeCount && hasSignal && ` · ${t("best matches first")}`}
             </p>
 
             {results.length === 0 && (
                 <p className={s.empty}>
-                    {showHidden ? "Nothing hidden yet." : "Nothing matches. Try a different search."}
+                    {showHidden ? t("Nothing hidden yet.") : t("Nothing matches. Try a different search.")}
                 </p>
             )}
 
@@ -306,7 +308,7 @@ function RecipeBrowse() {
                                     <div className={s.cardTitle}>{r.title}</div>
                                     <div className={s.cardMeta}>
                                         {r.protein_type}
-                                        {r.prep_time_minutes != null && <> · {r.prep_time_minutes} min</>}
+                                        {r.prep_time_minutes != null && <> · {r.prep_time_minutes} {t("min")}</>}
                                     </div>
                                     {macroLine(r) && <div className="macros">{macroLine(r)}</div>}
                                 </div>
@@ -315,8 +317,8 @@ function RecipeBrowse() {
                                 {showHidden ? (
                                     <button
                                         className={s.cardBtn}
-                                        onClick={() => { clearFeedback(r.id); showToast("Unhidden") }}
-                                        data-tip="Put it back in the library"
+                                        onClick={() => { clearFeedback(r.id); showToast(t("Unhidden")) }}
+                                        data-tip={t("Put it back in the library")}
                                         data-tip-below
                                     >
                                         <Icon name="undo" size={15} />
@@ -329,15 +331,15 @@ function RecipeBrowse() {
                                             onClick={() => {
                                                 if (r.verdict === "like") {
                                                     clearFeedback(r.id)
-                                                    showToast("Removed from your likes")
+                                                    showToast(t("Removed from your likes"))
                                                 } else {
                                                     setFeedback(r.id, "like")
-                                                    showToast("Liked")
+                                                    showToast(t("Liked"))
                                                 }
                                             }}
                                             aria-pressed={r.verdict === "like"}
                                             aria-label={r.verdict === "like" ? "remove your like" : "like this recipe"}
-                                            data-tip={r.verdict === "like" ? "Remove your like" : "Like this"}
+                                            data-tip={r.verdict === "like" ? t("Remove your like") : t("Like this")}
                                             data-tip-below
                                         >
                                             <Icon name="heart" size={15} filled={r.verdict === "like"} />
@@ -345,17 +347,17 @@ function RecipeBrowse() {
                                         <button
                                             className={`${s.cardBtn} ${s.planBtn}`}
                                             onClick={() => setPlanning({ id: r.id, title: r.title })}
-                                            data-tip="Add to a day on your plan"
+                                            data-tip={t("Add to a day on your plan")}
                                             data-tip-below
                                         >
                                             <Icon name="plus" size={15} />
-                                            Plan this
+                                            {t("Plan this")}
                                         </button>
                                         <button
                                             className={`${s.cardBtn} ${s.iconOnly}`}
                                             onClick={() => hide(r.id)}
                                             aria-label="hide this recipe"
-                                            data-tip="Never show me this"
+                                            data-tip={t("Never show me this")}
                                             data-tip-below
                                         >
                                             <Icon name="ban" size={15} />
@@ -389,6 +391,9 @@ function Group({ label, options, value, onChange }: {
     value: string
     onChange: (next: string) => void
 }) {
+    // the option labels are module constants, so they are translated here
+    // rather than where they are declared
+    const t = useT()
     return (
         <div className={s.group}>
             <span className={s.groupLabel}>{label}</span>
@@ -399,7 +404,7 @@ function Group({ label, options, value, onChange }: {
                         className={`${s.chip} ${value === o.key ? s.chipActive : ""}`}
                         onClick={() => onChange(value === o.key ? "" : o.key)}
                     >
-                        {o.label}
+                        {t(o.label)}
                     </button>
                 ))}
             </div>

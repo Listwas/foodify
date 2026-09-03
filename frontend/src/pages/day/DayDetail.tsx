@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom"
 import { dayLong, iso, startOfWeek } from "../../lib/dates"
 import { imageBox, ingredientLabel, mealImage } from "../../lib/format"
 import { kitchenQuantity, metricProse } from "../../lib/quantity"
+import { useT } from "../../lib/i18n"
 import { useToast } from "../../context/ToastContext"
 import { markCooked, servingsFor, setCheck, setDayServings, useAppState } from "../../store"
 import { BASE_SERVINGS, groceryKey, planKey } from "../../store/types"
@@ -18,6 +19,7 @@ const SLOT = "dinner"
 function DayDetail() {
     const { date } = useParams()
     const { showToast } = useToast()
+    const t = useT()
     const [modal, setModal] = useState<"suggest" | "generate" | null>(null)
     const state = useAppState()
     const recipes = useRecipeMap()
@@ -28,10 +30,10 @@ function DayDetail() {
     if (!date || !slot || !recipe) {
         return (
             <div className="page">
-                <p>This meal isn't planned anymore.</p>
+                <p>{t("This meal isn't planned anymore.")}</p>
                 <Link to="/" className="btn">
                     <Icon name="left" size={15} />
-                    Back to the week
+                    {t("Back to the week")}
                 </Link>
             </div>
         )
@@ -48,7 +50,7 @@ function DayDetail() {
 
     const cook = () => {
         markCooked(date, !cooked)
-        showToast(cooked ? "Marked as not cooked" : "Marked as cooked")
+        showToast(cooked ? t("Marked as not cooked") : t("Marked as cooked"))
     }
 
     return (
@@ -56,20 +58,20 @@ function DayDetail() {
             <div className={s.top}>
                 <Link to="/" className={s.back}>
                     <Icon name="left" size={15} />
-                    Week
+                    {t("Week view")}
                 </Link>
-                <div className={s.dateLine}>{dayLong(new Date(`${date}T00:00`))} · {SLOT}</div>
+                <div className={s.dateLine}>{dayLong(new Date(`${date}T00:00`))}</div>
                 <button
                     className={`btn ${cooked ? "primary" : ""}`}
                     onClick={cook}
-                    data-tip="Cooking it teaches the app what you actually make"
+                    data-tip={t("Cooking it teaches the app what you actually make")}
                 >
                     <Icon name="check" size={16} />
-                    {cooked ? "Cooked" : "Mark cooked"}
+                    {cooked ? t("Cooked") : t("Mark cooked")}
                 </button>
-                <button className="btn" onClick={() => setModal("suggest")} data-tip="Swap for something else">
+                <button className="btn" onClick={() => setModal("suggest")} data-tip={t("Swap for something else")}>
                     <Icon name="swap" size={16} />
-                    Swap
+                    {t("Swap")}
                 </button>
             </div>
 
@@ -87,25 +89,25 @@ function DayDetail() {
                     <h1>{recipe.title}</h1>
                     <div className={s.meta}>
                         {recipe.protein_type}
-                        {recipe.prep_time_minutes != null && <> · {recipe.prep_time_minutes} min</>}
-                        {recipe.source === "ai" && <> · generated</>}
+                        {recipe.prep_time_minutes != null && <> · {recipe.prep_time_minutes} {t("min")}</>}
+                        {recipe.source === "ai" && <> · {t("generated")}</>}
                     </div>
                     {recipe.calories != null && (
                         <div className={s.macroChips}>
-                            <span className={s.chip}><b>{recipe.calories}</b> kcal</span>
-                            <span className={s.chip}><b>{Math.round(recipe.protein_g ?? 0)}g</b> protein</span>
-                            <span className={s.chip}><b>{Math.round(recipe.carbs_g ?? 0)}g</b> carbs</span>
-                            <span className={s.chip}><b>{Math.round(recipe.sugar_g ?? 0)}g</b> sugar</span>
+                            <span className={s.chip}><b>{recipe.calories}</b> {t("kcal")}</span>
+                            <span className={s.chip}><b>{Math.round(recipe.protein_g ?? 0)}g</b> {t("protein")}</span>
+                            <span className={s.chip}><b>{Math.round(recipe.carbs_g ?? 0)}g</b> {t("carbs")}</span>
+                            <span className={s.chip}><b>{Math.round(recipe.sugar_g ?? 0)}g</b> {t("sugar")}</span>
                         </div>
                     )}
-                    <Link to={`/recipe/${recipe.id}`} className={s.fullLink}>Full recipe →</Link>
+                    <Link to={`/recipe/${recipe.id}`} className={s.fullLink}>{t("Full recipe →")}</Link>
                 </div>
             </div>
 
             <div className={s.columns}>
                 <section className={s.groceries}>
                     <h2>
-                        Groceries
+                        {t("Groceries")}
                         <span className={s.count}>{checkedCount}/{items.length}</span>
                     </h2>
                     <ServingsStepper
@@ -133,14 +135,14 @@ function DayDetail() {
                         className={s.weekLink}
                     >
                         <Icon name="list" size={14} />
-                        Everything for this week
+                        {t("Everything for this week")}
                     </Link>
                 </section>
 
                 <section className={s.instructions}>
-                    <h2>Instructions</h2>
+                    <h2>{t("Instructions")}</h2>
                     <div className={s.instructionsText}>
-                        {metricProse(recipe.instructions) || "No instructions recorded."}
+                        {metricProse(recipe.instructions) || t("No instructions recorded.")}
                     </div>
                 </section>
             </div>

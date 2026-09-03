@@ -1,3 +1,4 @@
+import { useT } from "../lib/i18n"
 import { MAX_SERVINGS, MIN_SERVINGS } from "../store/types"
 import Icon from "./Icon"
 import s from "./ServingsStepper.module.css"
@@ -17,17 +18,18 @@ function ServingsStepper({ value, base, onChange, className }: {
     onChange: (next: number) => void
     className?: string
 }) {
+    const t = useT()
     const factor = Math.round((value / base) * 100) / 100
 
     return (
         <div className={`${s.wrap} ${className ?? ""}`}>
-            <span className={s.label}>Serves</span>
+            <span className={s.label}>{t("Serves")}</span>
             <div className={s.stepper}>
                 <button
                     className={s.step}
                     onClick={() => onChange(value - 1)}
                     disabled={value <= MIN_SERVINGS}
-                    aria-label="one fewer serving"
+                    aria-label={t("one fewer serving")}
                 >
                     <Icon name="minus" size={15} />
                 </button>
@@ -36,12 +38,12 @@ function ServingsStepper({ value, base, onChange, className }: {
                     className={s.step}
                     onClick={() => onChange(value + 1)}
                     disabled={value >= MAX_SERVINGS}
-                    aria-label="one more serving"
+                    aria-label={t("one more serving")}
                 >
                     <Icon name="plus" size={15} />
                 </button>
             </div>
-            {factor !== 1 && <span className={s.factor}>amounts &times;{factor}</span>}
+            {factor !== 1 && <span className={s.factor}>{t("amounts ×{factor}", { factor })}</span>}
         </div>
     )
 }

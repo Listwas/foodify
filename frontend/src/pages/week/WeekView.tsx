@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom"
 import type { RecipeFull } from "../../lib/types"
 import {
     addDays, addMonths, iso, monthGrid, monthLabel, rangeLabel,
-    startOfMonth, startOfWeek, weekdayShort, WEEKDAY_HEADS,
+    startOfMonth, startOfWeek, weekdayHeads, weekdayShort,
 } from "../../lib/dates"
 import { imageBox, macroLine, mealImage } from "../../lib/format"
+import { useT } from "../../lib/i18n"
 import { useToast } from "../../context/ToastContext"
 import { useAppState, clearDay, markCooked } from "../../store"
 import { planKey } from "../../store/types"
@@ -29,6 +30,7 @@ interface Entry {
 }
 
 function WeekView() {
+    const t = useT()
     const [mode, setMode] = useState<Mode>(
         () => (localStorage.getItem("planner-mode") as Mode) || "week"
     )
@@ -65,12 +67,12 @@ function WeekView() {
 
     const cook = (dateIso: string, done: boolean) => {
         markCooked(dateIso, done)
-        showToast(done ? "Marked as cooked" : "Marked as not cooked")
+        showToast(done ? t("Marked as cooked") : t("Marked as not cooked"))
     }
 
     const clear = (dateIso: string) => {
         clearDay(dateIso)
-        showToast("Day cleared")
+        showToast(t("Day cleared"))
     }
 
     const openSuggest = (dateIso: string, entry?: Entry) =>
@@ -79,16 +81,16 @@ function WeekView() {
     return (
         <div className="page">
             <div className="page-head">
-                <h1>Dinner plan</h1>
+                <h1>{t("Dinner plan")}</h1>
                 <div className={s.headerRight}>
                     <Link
                         className={`btn ${s.shopBtn}`}
                         to={`/shopping/${iso(startOfWeek(mode === "week" ? anchor : new Date()))}`}
-                        data-tip="Everything this week needs, added up"
+                        data-tip={t("Everything this week needs, added up")}
                         data-tip-below
                     >
                         <Icon name="list" size={16} />
-                        Shopping
+                        {t("Shopping")}
                     </Link>
                     <div className={s.modes} role="tablist" aria-label="calendar range">
                         {(["week", "month"] as Mode[]).map(m => (
@@ -99,23 +101,23 @@ function WeekView() {
                                 className={`${s.modeBtn} ${mode === m ? s.modeActive : ""}`}
                                 onClick={() => setPlannerMode(m)}
                             >
-                                {m === "week" ? "Week" : "Month"}
+                                {m === "week" ? t("Week") : t("Month")}
                             </button>
                         ))}
                     </div>
                     <div className={s.weekNav}>
                         <button className="btn ghost icon" onClick={() => setOffset(o => o - 1)}
-                            aria-label="previous" data-tip="Previous">
+                            aria-label={t("Previous")} data-tip={t("Previous")}>
                             <Icon name="left" />
                         </button>
                         <button className={`btn ghost ${s.rangeBtn}`} onClick={() => setOffset(0)}
-                            data-tip="Jump to today">
+                            data-tip={t("Jump to today")}>
                             {offset === 0
-                                ? (mode === "week" ? "This week" : "This month")
+                                ? (mode === "week" ? t("This week") : t("This month"))
                                 : (mode === "week" ? rangeLabel(anchor) : monthLabel(anchor))}
                         </button>
                         <button className="btn ghost icon" onClick={() => setOffset(o => o + 1)}
-                            aria-label="next" data-tip="Next">
+                            aria-label={t("Next")} data-tip={t("Next")}>
                             <Icon name="right" />
                         </button>
                     </div>
@@ -148,7 +150,7 @@ function WeekView() {
                                         <button
                                             className={s.rowMain}
                                             onClick={() => navigate(`/day/${dateIso}`)}
-                                            data-tip="Open recipe & groceries"
+                                            data-tip={t("Open recipe & groceries")}
                                             data-tip-below
                                         >
                                             {mealImage(entry.recipe.image_url, "card") ? (
@@ -184,8 +186,8 @@ function WeekView() {
                                                 className={`btn icon ${s.cookBtn} ${entry.cooked ? s.cookedOn : ""}`}
                                                 onClick={() => cook(dateIso, !entry.cooked)}
                                                 aria-pressed={entry.cooked}
-                                                aria-label={entry.cooked ? "mark as not cooked" : "mark as cooked"}
-                                                data-tip={entry.cooked ? "Cooked, tap to undo" : "Mark as cooked"}
+                                                aria-label={entry.cooked ? t("Cooked, tap to undo") : t("Mark as cooked")}
+                                                data-tip={entry.cooked ? t("Cooked, tap to undo") : t("Mark as cooked")}
                                             >
                                                 <Icon name="check" />
                                             </button>
@@ -207,7 +209,7 @@ function WeekView() {
                                 ) : (
                                     <button className={s.rowEmpty} onClick={() => openSuggest(dateIso)}>
                                         <Icon name="plus" size={16} />
-                                        Plan something
+                                        {t("Plan something")}
                                     </button>
                                 )}
                             </div>
@@ -217,7 +219,7 @@ function WeekView() {
             ) : (
                 <div className={s.month}>
                     <div className={s.monthHead}>
-                        {WEEKDAY_HEADS.map(d => <div key={d}>{d}</div>)}
+                        {weekdayHeads().map(d => <div key={d}>{d}</div>)}
                     </div>
                     <div className={s.monthGrid}>
                         {days.map(day => {
@@ -235,7 +237,7 @@ function WeekView() {
                                     onClick={() =>
                                         entry ? navigate(`/day/${dateIso}`) : openSuggest(dateIso)
                                     }
-                                    title={entry ? entry.recipe.title : "plan something"}
+                                    title={entry ? entry.recipe.title : t("Plan something")}
                                 >
                                     <span className={s.cellNum}>{day.getDate()}</span>
                                     {entry ? (

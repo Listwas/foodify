@@ -2,6 +2,7 @@ import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Outlet, Link } from 'react-router-dom'
 import { ToastProvider } from './context/ToastContext'
+import { useT } from './lib/i18n'
 import Nav from './components/Nav'
 import WeekView from './pages/week/WeekView'
 import { hydrate } from './store'
@@ -36,11 +37,12 @@ function Layout() {
  * running a cached copy from before a new page shipped.
  */
 function NotFound() {
+  const t = useT()
   return (
     <div className="page">
-      <h1>There's nothing here</h1>
-      <p className="muted">That address doesn't match anything in Foodify.</p>
-      <Link to="/" className="btn primary">Back to the plan</Link>
+      <h1>{t("There's nothing here")}</h1>
+      <p className="muted">{t("That address doesn't match anything in Foodify.")}</p>
+      <Link to="/" className="btn primary">{t("Back to the plan")}</Link>
     </div>
   )
 }
@@ -71,11 +73,12 @@ function App() {
 }
 
 function Failed({ error }: { error: unknown }) {
+  const t = useT()
   return (
     <div className="page">
-      <h1>Foodify couldn't start</h1>
+      <h1>{t("Foodify couldn't start")}</h1>
       <p className="muted">{error instanceof Error ? error.message : String(error)}</p>
-      <button className="btn" onClick={() => location.reload()}>Try again</button>
+      <button className="btn" onClick={() => location.reload()}>{t("Try again")}</button>
     </div>
   )
 }

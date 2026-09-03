@@ -3,6 +3,8 @@ import { Link } from "react-router-dom"
 import type { RecipeFull, Verdict } from "../../lib/types"
 import { imageBox, ingredientLabel, macroLine, mealImage } from "../../lib/format"
 import { kitchenQuantity, metricProse } from "../../lib/quantity"
+import { useT } from "../../lib/i18n"
+import { reasonText } from "../../lib/reasons"
 import { useSwipe, type SwipeDir } from "../../lib/useSwipe"
 import { useToast } from "../../context/ToastContext"
 import { clearFeedback, getState, lastJudged, setFeedback } from "../../store"
@@ -33,16 +35,17 @@ const LABEL: Record<SwipeDir, string> = { right: "Yes", left: "Pass", down: "Hid
  * Laid over the card instead: the stage keeps its size and this gets to scroll.
  */
 function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
+    const t = useT()
     return (
         <div className={s.details}>
             <div className={s.detailsHead}>
                 <h3>{card.title}</h3>
-                <button className={s.detailsClose} onClick={onClose} aria-label="close details">
+                <button className={s.detailsClose} onClick={onClose} aria-label={t("close details")}>
                     <Icon name="close" size={18} />
                 </button>
             </div>
             <div className={s.detailsBody}>
-                <h4>Ingredients</h4>
+                <h4>{t("Ingredients")}</h4>
                 <ul className={s.detailsList}>
                     {card.ingredients.map(i => (
                         <li key={i.id}>
@@ -50,9 +53,9 @@ function CardDetails({ card, onClose }: { card: Card; onClose: () => void }) {
                         </li>
                     ))}
                 </ul>
-                <h4>Method</h4>
+                <h4>{t("Method")}</h4>
                 <p className={s.detailsMethod}>
-                    {metricProse(card.instructions) || "No instructions recorded."}
+                    {metricProse(card.instructions) || t("No instructions recorded.")}
                 </p>
             </div>
         </div>
@@ -67,6 +70,7 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
     onOpen: () => void
     onClose: () => void
 }) {
+    const t = useT()
     const { handlers, style, intent } = useSwipe(onCommit)
     const img = mealImage(card.image_url, "hero")
     // dragging while reading would fling the card away mid-sentence
@@ -80,7 +84,7 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
         >
             {intent.dir && draggable && (
                 <div className={`${s.stamp} ${s[intent.dir]}`} style={{ opacity: intent.strength }}>
-                    {LABEL[intent.dir]}
+                    {t(LABEL[intent.dir])}
                 </div>
             )}
             <div className={s.photo}>
@@ -108,7 +112,7 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
                         onPointerDown={e => e.stopPropagation()}
                     >
                         <Icon name="list" size={14} />
-                        Details
+                        {t("Details")}
                     </button>
                 )}
             </div>
@@ -116,12 +120,12 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
                 <h2>{card.title}</h2>
                 <div className={s.meta}>
                     {card.protein_type}
-                    {card.prep_time_minutes != null && <> · {card.prep_time_minutes} min</>}
+                    {card.prep_time_minutes != null && <> · {card.prep_time_minutes} {t("min")}</>}
                 </div>
                 {macroLine(card) && <div className="macros">{macroLine(card)}</div>}
                 {card.reasons.length > 0 && (
                     <div className={s.reasons}>
-                        {card.reasons.map(r => <span key={r} className={s.reason}>{r}</span>)}
+                        {card.reasons.map(r => <span key={r} className={s.reason}>{reasonText(r)}</span>)}
                     </div>
                 )}
             </div>
@@ -132,6 +136,7 @@ function SwipeCard({ card, onCommit, top, open, onOpen, onClose }: {
 
 function Discover() {
     const { showToast } = useToast()
+    const t = useT()
     const index = useIndex()
     // deliberately the verdict-free map: a swipe must not invalidate the deal
     const recipes = useStructuralMap()
@@ -193,7 +198,7 @@ function Discover() {
             // put back the card that was actually swiped, not whatever the
             // recommender would serve next
             setQueue(q => [card, ...q.filter(c => c.id !== card.id)])
-            showToast(`Back: ${card.title}`)
+            showToast(t("Back: {title}", { title: card.title }))
             return
         }
         // nothing swiped this session — fall back to the last verdict on record,
@@ -201,12 +206,12 @@ function Discover() {
         const id = lastJudged()
         const recipe = id == null ? undefined : recipes.get(id)
         if (!recipe) {
-            showToast("Nothing to undo", "error")
+            showToast(t("Nothing to undo"), "error")
             return
         }
         clearFeedback(recipe.id)
         setQueue(q => [{ ...recipe, reasons: [] }, ...q.filter(c => c.id !== recipe.id)])
-        showToast(`Back: ${recipe.title}`)
+        showToast(t("Back: {title}", { title: recipe.title }))
     }, [undoStack, recipes, showToast])
 
     const visible = useMemo(() => queue.slice(0, 3).reverse(), [queue])
@@ -232,17 +237,16 @@ function Discover() {
     return (
         <div className={`page ${s.page}`}>
             <div className="page-head">
-                <h1>Discover</h1>
+                <h1>{t("Discover")}</h1>
                 <div className={s.headerRight}>
-                    {swiped > 0 && <span className={s.counter}>{swiped} swiped</span>}
-                    <Link to="/discover/history" className="btn ghost" data-tip="Everything you've swiped">
-                        History
+                    {swiped > 0 && <span className={s.counter}>{t("{n} swiped", { n: swiped })}</span>}
+                    <Link to="/discover/history" className="btn ghost" data-tip={t("Everything you've swiped")}>
+                        {t("History")}
                     </Link>
                 </div>
             </div>
             <p className={s.hint}>
-                Swipe or use ← → keys, ↑ for what's in it. Everything you keep trains what
-                the app suggests everywhere else.
+                {t("Swipe or use ← → keys, ↑ for what's in it. Everything you keep trains what the app suggests everywhere else.")}
             </p>
 
             <div className={s.stage}>
@@ -260,11 +264,11 @@ function Discover() {
                     ))
                 ) : (
                     <div className={s.empty}>
-                        {!dealt ? "Dealing cards…" : (
+                        {!dealt ? t("Dealing cards…") : (
                             <>
                                 <Icon name="plate" size={34} />
-                                <p>You've been through everything for now.</p>
-                                <Link to="/recipes" className="btn">Browse the library</Link>
+                                <p>{t("You've been through everything for now.")}</p>
+                                <Link to="/recipes" className="btn">{t("Browse the library")}</Link>
                             </>
                         )}
                     </div>
@@ -276,8 +280,8 @@ function Discover() {
                     className={`${s.action} ${s.pass}`}
                     onClick={() => commit("left")}
                     disabled={!top}
-                    aria-label="pass"
-                    data-tip="Pass, not right now"
+                    aria-label={t("Pass")}
+                    data-tip={t("Pass, not right now")}
                 >
                     <Icon name="close" size={22} />
                 </button>
@@ -285,16 +289,16 @@ function Discover() {
                     className={`${s.action} ${s.hideBtn}`}
                     onClick={() => commit("down")}
                     disabled={!top}
-                    aria-label="hide"
-                    data-tip="Hide, never show me this"
+                    aria-label={t("Hide")}
+                    data-tip={t("Hide, never show me this")}
                 >
                     <Icon name="ban" size={19} />
                 </button>
                 <button
                     className={`${s.action} ${s.undoBtn}`}
                     onClick={undo}
-                    aria-label="undo last swipe"
-                    data-tip="Undo last swipe"
+                    aria-label={t("undo last swipe")}
+                    data-tip={t("Undo last swipe")}
                 >
                     <Icon name="undo" size={19} />
                 </button>
@@ -302,8 +306,8 @@ function Discover() {
                     className={`${s.action} ${s.like}`}
                     onClick={() => commit("right")}
                     disabled={!top}
-                    aria-label="like"
-                    data-tip="Like, add to your list"
+                    aria-label={t("like")}
+                    data-tip={t("Like, add to your list")}
                 >
                     <Icon name="heart" size={22} filled />
                 </button>

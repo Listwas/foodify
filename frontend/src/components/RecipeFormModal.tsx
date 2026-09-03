@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react"
 import type { RecipeCandidate, RecipeFull } from "../lib/types"
 import type { RecipeEdit } from "../store/types"
+import { useT } from "../lib/i18n"
 import { useToast } from "../context/ToastContext"
 import { addRecipe, assign, editRecipe } from "../store"
 import { useProteinTypes } from "../data/library"
@@ -45,6 +46,7 @@ const str = (v: number | null | undefined) => (v == null ? "" : String(v))
  */
 function RecipeFormModal({ recipe, date, onClose }: Props) {
     const { showToast } = useToast()
+    const t = useT()
     const proteins = useProteinTypes()
     const editing = !!recipe
 
@@ -157,12 +159,12 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
         // say so when the category was filled in for them, so a wrong guess is
         // something they can see and go back for
         const filedAs = !protein.trim() && saved.protein_type
-            ? `, filed under ${saved.protein_type}`
+            ? t(", filed under {category}", { category: saved.protein_type })
             : ""
         showToast(
-            copiedFrom ? `Copied: ${saved.title}`
-                : date ? `Planned: ${saved.title}${filedAs}`
-                    : `Saved: ${saved.title}${filedAs}`
+            copiedFrom ? t("Copied: {title}", { title: saved.title })
+                : date ? t("Planned: {title}", { title: saved.title }) + filedAs
+                    : t("Saved: {title}", { title: saved.title }) + filedAs
         )
         onClose()
     }
@@ -171,29 +173,29 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
         if (!recipe || !valid()) return
         const patch: RecipeEdit = { ...common(), ingredients: numberedIngredients() }
         editRecipe(recipe.id, patch)
-        showToast(`Updated: ${patch.title}`)
+        showToast(t("Updated: {title}", { title: patch.title }))
         onClose()
     }
 
     return (
-        <Modal title={editing ? "Edit recipe" : "Add your own recipe"} onClose={onClose}>
+        <Modal title={editing ? t("Edit recipe") : t("Add your own recipe")} onClose={onClose}>
             <div className={s.form}>
                 <label className={s.field}>
-                    <span className={s.label}>Name</span>
+                    <span className={s.label}>{t("Name")}</span>
                     <input
                         className="field"
                         value={title}
                         onChange={e => setTitle(e.target.value)}
-                        placeholder="Grandma's tomato soup"
+                        placeholder={t("Grandma's tomato soup")}
                         maxLength={140}
                         autoFocus
                     />
-                    {titleMissing && <span className={s.error}>Give it a name first.</span>}
+                    {titleMissing && <span className={s.error}>{t("Give it a name first.")}</span>}
                 </label>
 
                 <div className={s.pair}>
                     <label className={s.field}>
-                        <span className={s.label}>Main ingredient</span>
+                        <span className={s.label}>{t("Main ingredient")}</span>
                         <input
                             className="field"
                             value={protein}
@@ -215,12 +217,12 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                                 onClick={() => setProtein(guess.category)}
                             >
                                 <Icon name="sparkle" size={13} />
-                                Looks like <b>{guess.category}</b> &mdash; use it
+                                {t("Looks like")} <b>{guess.category}</b> &mdash; {t("use it")}
                             </button>
                         )}
                     </label>
                     <label className={s.field}>
-                        <span className={s.label}>Minutes</span>
+                        <span className={s.label}>{t("Minutes")}</span>
                         <input
                             className="field"
                             value={time}
@@ -233,7 +235,7 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                 </div>
 
                 <div className={s.field}>
-                    <span className={s.label}>Ingredients</span>
+                    <span className={s.label}>{t("Ingredients")}</span>
                     <div className={s.rows}>
                         {rows.map((row, i) => (
                             <div key={i} className={s.row}>
@@ -280,11 +282,11 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                         <Icon name="plus" size={15} />
                         Add ingredient
                     </button>
-                    {ingredientsMissing && <span className={s.error}>Add at least one ingredient.</span>}
+                    {ingredientsMissing && <span className={s.error}>{t("Add at least one ingredient.")}</span>}
                 </div>
 
                 <label className={s.field}>
-                    <span className={s.label}>How to make it</span>
+                    <span className={s.label}>{t("How to make it")}</span>
                     <textarea
                         className={`field ${s.steps}`}
                         value={instructions}
@@ -295,7 +297,7 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                 </label>
 
                 <div className={s.field}>
-                    <span className={s.label}>Photo</span>
+                    <span className={s.label}>{t("Photo")}</span>
                     {photo.image_url && (
                         <img className={`${s.preview} meal-img`} src={photo.image_url} alt="" />
                     )}
@@ -349,7 +351,7 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                                 type="button"
                                 className="btn"
                                 onClick={() => saveNew(recipe!.id)}
-                                data-tip="Keeps the original as it was"
+                                data-tip={t("Keeps the original as it was")}
                             >
                                 <Icon name="plus" size={15} />
                                 Save as a copy
@@ -357,10 +359,10 @@ function RecipeFormModal({ recipe, date, onClose }: Props) {
                         </>
                     ) : (
                         <button type="button" className="btn primary" onClick={() => saveNew(null)}>
-                            {date ? "Save & plan it" : "Save to library"}
+                            {date ? t("Save & plan it") : t("Save to library")}
                         </button>
                     )}
-                    <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
+                    <button type="button" className="btn ghost" onClick={onClose}>{t("Cancel")}</button>
                 </div>
             </div>
         </Modal>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import type { Verdict } from "../../lib/types"
 import { daysBetween, today } from "../../lib/dates"
 import { imageBox, mealImage } from "../../lib/format"
+import { useT } from "../../lib/i18n"
 import { useToast } from "../../context/ToastContext"
 import { clearFeedback, setFeedback, useAppState } from "../../store"
 import { useRecipeMap } from "../../data/library"
@@ -10,7 +11,7 @@ import Icon, { type IconName } from "../../components/Icon"
 import s from "./History.module.css"
 
 const FILTERS: { key: Verdict | "all"; label: string }[] = [
-    { key: "all", label: "Everything" },
+    { key: "all", label: "All" },
     { key: "like", label: "Liked" },
     { key: "dislike", label: "Passed" },
     { key: "hidden", label: "Hidden" },
@@ -34,6 +35,7 @@ const when = (decidedAt: string) => {
 function History() {
     const [filter, setFilter] = useState<Verdict | "all">("all")
     const { showToast } = useToast()
+    const t = useT()
     const state = useAppState()
     const recipes = useRecipeMap()
 
@@ -53,19 +55,18 @@ function History() {
 
     const reset = (id: number) => {
         clearFeedback(id)
-        showToast("Reset, it'll come back around")
+        showToast(t("Reset, it'll come back around"))
     }
 
     return (
         <div className="page">
             <Link to="/discover" className={s.back}>
                 <Icon name="left" size={15} />
-                Discover
+                {t("Discover")}
             </Link>
-            <h1>Swipe history</h1>
+            <h1>{t("Swipe history")}</h1>
             <p className={s.blurb}>
-                Nothing here is permanent. Change your mind whenever you like, and anything you
-                passed on drifts back into the deck after a few months on its own.
+                {t("Nothing here is permanent. Change your mind whenever you like, and anything you passed on drifts back into the deck after a few months on its own.")}
             </p>
 
             <div className={s.chips}>
@@ -75,14 +76,14 @@ function History() {
                         className={`${s.chip} ${filter === f.key ? s.chipActive : ""}`}
                         onClick={() => setFilter(f.key)}
                     >
-                        {f.label}
+                        {t(f.label)}
                     </button>
                 ))}
             </div>
 
             {entries.length === 0 && (
                 <p className={s.empty}>
-                    Nothing here yet. <Link to="/discover">Go find something.</Link>
+                    {t("Nothing here yet.")} <Link to="/discover">{t("Go find something.")}</Link>
                 </p>
             )}
 
@@ -114,7 +115,7 @@ function History() {
                                         <span className={`${s.verdict} ${s[entry.verdict]}`}>
                                             <Icon name={verdict.icon} size={13}
                                                 filled={entry.verdict === "like"} />
-                                            {verdict.label}
+                                            {t(verdict.label)}
                                         </span>
                                         <span className={s.dot}>·</span>
                                         {when(entry.decidedAt)}
@@ -130,8 +131,8 @@ function History() {
                                             key={v}
                                             className="btn icon"
                                             onClick={() => change(r.id, v)}
-                                            aria-label={VERDICT[v].label.toLowerCase()}
-                                            data-tip={VERDICT[v].label}
+                                            aria-label={t(VERDICT[v].label)}
+                                            data-tip={t(VERDICT[v].label)}
                                         >
                                             <Icon name={VERDICT[v].icon} size={16}
                                                 filled={v === "like"} />
@@ -141,7 +142,7 @@ function History() {
                                     className="btn ghost icon"
                                     onClick={() => reset(r.id)}
                                     aria-label="forget this decision"
-                                    data-tip="Forget this decision"
+                                    data-tip={t("Forget this decision")}
                                 >
                                     <Icon name="undo" size={16} />
                                 </button>
